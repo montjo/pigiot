@@ -108,7 +108,8 @@ Cada push a `main` vuelve a desplegar solo. La web queda en
 ## Antes de regalarlo
 
 - [ ] Cartas de verdad en `content/letters.json` y `npm run letters` con la
-      contraseña definitiva (no `prueba123`).
+      contraseña definitiva. Mientras no se haga, lo que hay publicado son las
+      cartas de ejemplo cifradas con una contraseña de pruebas.
 - [ ] `VITE_ADMIN_PASSWORD_HASH` cambiado, en `.env` y en los secretos de GitHub.
 - [ ] **Borrar los datos de prueba**: consola de Firebase → Firestore → pestaña
       *Datos* → colección `progress` → borrar el documento. Si no, el panel le
