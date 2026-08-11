@@ -1,0 +1,23 @@
+[
+  {
+    "id": "triste",
+    "emoji": "🌧️",
+    "title": "Ábreme cuando estés triste",
+    "hint": "De esos días en los que no apetece nada.",
+    "body": "Primera línea de la carta.\n\nLos saltos de línea dobles separan párrafos.\n\nEscribe aquí lo que quieras."
+  },
+  {
+    "id": "me-echas-de-menos",
+    "emoji": "📞",
+    "title": "Ábreme cuando me eches de menos",
+    "body": "Otra carta."
+  },
+  {
+    "id": "cumple",
+    "emoji": "🎂",
+    "title": "Ábreme el día de tu cumple",
+    "hint": "Sí, hoy. No hagas trampas.",
+    "unlockAt": "2027-03-14",
+    "body": "Esta carta no aparece hasta la fecha de unlockAt (formato AAAA-MM-DD). Quita el campo si no quieres bloqueo por fecha."
+  }
+]

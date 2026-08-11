@@ -1,0 +1,19 @@
+rules_version = '2';
+
+// Pega TODO este fichero en: Consola de Firebase > Firestore Database > Reglas.
+//
+// El id de abajo es el "progressId" de public/letters.enc.json: el único
+// documento que la app usa. Se conserva aunque vuelvas a ejecutar
+// `npm run letters`, así que estas reglas no hay que tocarlas nunca más.
+//
+// Con esto la base de datos solo acepta lecturas y escrituras sobre ESE
+// documento: nadie puede crear colecciones nuevas ni llenarte la cuota.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /progress/{docId} {
+      allow read: if docId == '97a15a0962a02f2f18c81c62';
+      allow write: if docId == '97a15a0962a02f2f18c81c62'
+                   && request.resource.data.keys().hasOnly(['opened', 'visits', 'lastSeen']);
+    }
+  }
+}
