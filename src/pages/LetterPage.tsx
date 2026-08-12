@@ -298,8 +298,14 @@ export default function LetterPage() {
         {carta.bombo && <Bombo carta={carta} />}
 
         <p className="matasellos">
-          {carta.escritaEl && <>Escrita en {carta.escritaEl} · </>}
-          Abierta el {formatearFecha(apertura.at)}
+          {modoRevision ? (
+            'Vista de revisión · nada se guarda'
+          ) : (
+            <>
+              {carta.escritaEl && <>Escrita en {carta.escritaEl} · </>}
+              Abierta el {formatearFecha(apertura.at)}
+            </>
+          )}
         </p>
 
         {carta.tipo === 'primera' && (
