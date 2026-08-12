@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useSession } from '../lib/session-context'
 import { cartasVisibles, estadoDeCarta, formatearFecha } from '../lib/estado'
-import { NOMBRE_TIPO, type EstadoCarta } from '../lib/tipos'
+import { NOMBRE_TIPO, type Carta, type EstadoCarta, type Progreso } from '../lib/tipos'
 
 const MARCA_VISITA = 'pigiot:ha-entrado'
 const PULSACION_MS = 900
@@ -77,41 +77,40 @@ function Puerta() {
   return (
     <main className="pantalla pantalla--centro">
       <form className="puerta" onSubmit={enviar}>
-        <p className="puerta__sobre" aria-hidden="true">
-          ✉
-        </p>
-        <h1>Hola.</h1>
-        <p className="apagado">
-          {primeraVez ? 'Alguien de esta mesa te la va a decir.' : 'La contraseña ya la sabes.'}
-        </p>
-        <input
-          type="password"
-          name="password"
-          autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="contraseña"
-          autoFocus
-          aria-label="contraseña"
-        />
+        <div className="puerta__cabecera">
+          <p className="puerta__marca">Para Pigi</p>
+          <h1>Ábreme cuando…</h1>
+          <p className="puerta__texto">
+            {primeraVez
+              ? 'Un regalo privado de los de siempre. Pide la contraseña en la mesa y entra.'
+              : 'Vuelve a entrar con la contraseña del regalo.'}
+          </p>
+        </div>
+        <label className="campo-login">
+          <span>Contraseña</span>
+          <input
+            type="password"
+            name="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Escríbela aquí"
+            autoFocus
+          />
+        </label>
         <button type="submit" disabled={ocupado || !password}>
           {ocupado ? 'Abriendo…' : 'Entrar'}
         </button>
         {fallo && <p className="error">Esa no es. Prueba otra vez.</p>}
 
-        <button type="button" className="enlace" onClick={() => setAyuda((v) => !v)}>
-          no me acuerdo
+        <button type="button" className="enlace puerta__ayuda" onClick={() => setAyuda(true)}>
+          No me acuerdo
         </button>
         {ayuda && (
           <div className="ayuda">
-            {pista && <p className="ayuda__pista">{pista}</p>}
-            {fallos >= 3 && (
-              <p className="apagado">
-                No hay botón de recuperarla. Las cartas están cifradas con ella, así que sin
-                contraseña no las puede leer nadie: ni tú, ni nosotros, ni Google. Escríbele a
-                cualquiera de los que firman abajo y te la dicen.
-              </p>
-            )}
+            <p className="ayuda__titulo">Escríbele a Montjo.</p>
+            <p className="apagado">Dile que no recuerdas la contraseña y te la pasará.</p>
+            {pista && fallos >= 2 && <p className="ayuda__pista">{pista}</p>}
           </div>
         )}
       </form>
@@ -120,11 +119,87 @@ function Puerta() {
 }
 
 const ETIQUETA: Record<EstadoCarta, string> = {
-  futura: 'aún no',
-  'pide-prueba': 'pide algo',
-  cerrada: 'sin abrir',
-  'a-medias': 'a medias',
-  abierta: 'abierta',
+  futura: 'más adelante',
+  'pide-prueba': 'pide prueba',
+  cerrada: 'abrir',
+  'a-medias': 'terminar',
+  abierta: 'releer',
+}
+
+function CartaEnLista({
+  carta,
+  estado,
+  progreso,
+}: {
+  carta: Carta
+  estado: EstadoCarta
+  progreso: Progreso
+}) {
+  const bloqueada = estado === 'futura'
+  const apertura = progreso.opened[carta.id]
+  const titulo = bloqueada && !carta.pista ? 'Una carta que llega más adelante' : carta.titulo
+  const contenido = (
+    <>
+      <span className="carta__marca" aria-hidden="true" />
+      <span className="carta__texto">
+        <span className="carta__tipo">{NOMBRE_TIPO[carta.tipo]}</span>
+        <span className="carta__titulo">{titulo}</span>
+        {carta.pista && <span className="carta__pista">{carta.pista}</span>}
+        {apertura && (
+          <span className="carta__fecha">Abierta el {formatearFecha(apertura.at)}</span>
+        )}
+      </span>
+      <span className="carta__estado">{ETIQUETA[estado]}</span>
+    </>
+  )
+
+  if (bloqueada) {
+    return (
+      <div className="carta carta--bloqueada" data-tipo={carta.tipo}>
+        {contenido}
+      </div>
+    )
+  }
+
+  return (
+    <Link to={`/carta/${carta.id}`} className={`carta carta--${estado}`} data-tipo={carta.tipo}>
+      {contenido}
+    </Link>
+  )
+}
+
+function SeccionCartas({
+  titulo,
+  descripcion,
+  items,
+  progreso,
+  vacio,
+}: {
+  titulo: string
+  descripcion?: string
+  items: { carta: Carta; estado: EstadoCarta }[]
+  progreso: Progreso
+  vacio?: string
+}) {
+  return (
+    <section className="seccion-cartas">
+      <div className="seccion-cartas__cabecera">
+        <h2>{titulo}</h2>
+        {descripcion && <p>{descripcion}</p>}
+      </div>
+      {items.length > 0 ? (
+        <ul className="lista">
+          {items.map(({ carta, estado }) => (
+            <li key={carta.id}>
+              <CartaEnLista carta={carta} estado={estado} progreso={progreso} />
+            </li>
+          ))}
+        </ul>
+      ) : (
+        vacio && <p className="estado-vacio">{vacio}</p>
+      )}
+    </section>
+  )
 }
 
 export default function Home() {
@@ -141,80 +216,81 @@ export default function Home() {
 
   const visibles = cartasVisibles(cartas, progreso)
   const conEstado = visibles.map((c) => ({ carta: c, estado: estadoDeCarta(c, progreso) }))
-  const sinAbrir = conEstado.filter((x) => x.estado === 'cerrada' || x.estado === 'pide-prueba').length
-  const porLlegar = conEstado.filter((x) => x.estado === 'futura').length
+  const paraAbrir = conEstado.filter(
+    (x) => x.estado === 'cerrada' || x.estado === 'pide-prueba' || x.estado === 'a-medias',
+  )
   const abiertas = conEstado
-    .filter((x) => x.estado === 'abierta' || x.estado === 'a-medias')
-    .sort((a, b) => (progreso.opened[a.carta.id].at < progreso.opened[b.carta.id].at ? -1 : 1))
+    .filter((x) => x.estado === 'abierta')
+    .sort((a, b) => (progreso.opened[a.carta.id].at < progreso.opened[b.carta.id].at ? 1 : -1))
+  const futuras = conEstado.filter((x) => x.estado === 'futura')
 
   return (
     <main className="pantalla">
       <header className="cabecera">
+        <div className="cabecera__barra">
+          <p className="cabecera__marca">Para Pigi</p>
+          <nav className="cabecera__acciones" aria-label="Acciones">
+            <Link to="/como-va" className="enlace">
+              Cómo va esto
+            </Link>
+            <button type="button" className="enlace" onClick={lock}>
+              Cerrar
+            </button>
+          </nav>
+        </div>
         <h1>Ábreme cuando…</h1>
-        <p className="apagado">
-          {sinAbrir > 0 ? `${sinAbrir} sin abrir` : 'Las has abierto todas'}
-          {porLlegar > 0 && ` · ${porLlegar} aún por llegar`}
-        </p>
+        <p className="cabecera__intro">Un buzón privado para los momentos importantes.</p>
+        <dl className="resumen" aria-label="Resumen de cartas">
+          <div>
+            <dt>Para abrir</dt>
+            <dd>{paraAbrir.length}</dd>
+          </div>
+          <div>
+            <dt>Abiertas</dt>
+            <dd>{abiertas.length}</dd>
+          </div>
+          <div>
+            <dt>Después</dt>
+            <dd>{futuras.length}</dd>
+          </div>
+        </dl>
       </header>
 
-      <ul className="lista">
-        {conEstado.map(({ carta, estado }) => {
-          const bloqueada = estado === 'futura'
-          const contenido = (
-            <>
-              <span className="carta__marca" aria-hidden="true" />
-              <span className="carta__texto">
-                <span className="carta__tipo">{NOMBRE_TIPO[carta.tipo]}</span>
-                <span className="carta__titulo">
-                  {bloqueada && !carta.pista ? 'Una carta que llega más adelante' : carta.titulo}
-                </span>
-                {carta.pista && <span className="carta__pista">{carta.pista}</span>}
-              </span>
-              <span className="carta__estado">{ETIQUETA[estado]}</span>
-            </>
-          )
-          return (
-            <li key={carta.id}>
-              {bloqueada ? (
-                <div className="carta carta--bloqueada" data-tipo={carta.tipo}>
-                  {contenido}
-                </div>
-              ) : (
-                <Link
-                  to={`/carta/${carta.id}`}
-                  className={`carta carta--${estado}`}
-                  data-tipo={carta.tipo}
-                >
-                  {contenido}
-                </Link>
-              )}
-            </li>
-          )
-        })}
-        <li className="fantasma">Y las que faltan. Esto no se ha acabado.</li>
-      </ul>
-
-      {abiertas.length > 0 && (
-        <section className="diario">
-          <h2>Lo que ya has abierto</h2>
-          <ul>
-            {abiertas.map(({ carta }) => (
-              <li key={carta.id}>
-                <Link to={`/carta/${carta.id}`}>{carta.titulo}</Link>
-                <span className="apagado"> · {formatearFecha(progreso.opened[carta.id].at)}</span>
-              </li>
-            ))}
-          </ul>
+      {paraAbrir.length > 0 ? (
+        <SeccionCartas
+          titulo="Para abrir"
+          descripcion="Lo que está esperando ahora."
+          items={paraAbrir}
+          progreso={progreso}
+        />
+      ) : (
+        <section className="estado-listo">
+          <h2>Todo leído por ahora</h2>
+          <p>Cuando haya otra carta esperando, aparecerá aquí arriba.</p>
         </section>
       )}
 
+      {abiertas.length > 0 && (
+        <SeccionCartas
+          titulo="Ya abiertas"
+          descripcion="Quedan aquí para volver cuando quieras."
+          items={abiertas}
+          progreso={progreso}
+        />
+      )}
+
+      {futuras.length > 0 && (
+        <SeccionCartas
+          titulo="Más adelante"
+          descripcion="Aparecerán cuando llegue su momento."
+          items={futuras}
+          progreso={progreso}
+        />
+      )}
+
+      <p className="fantasma">Y las que faltan. Esto no se ha acabado.</p>
+
       <footer className="pie">
-        <Link to="/como-va" className="enlace">
-          Cómo va esto
-        </Link>
-        <button type="button" className="enlace" onClick={lock}>
-          Cerrar
-        </button>
         <FirmaDelGrupo />
       </footer>
     </main>

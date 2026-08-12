@@ -23,6 +23,8 @@ export type Prueba = {
   pregunta?: string
   /** true en las pruebas que piden una foto del momento (abre la cámara). */
   camara?: boolean
+  /** true cuando la carta debe comprobar que está fuera de España. */
+  ubicacion?: boolean
 }
 
 /** Un escrito firmado por una persona del grupo. */

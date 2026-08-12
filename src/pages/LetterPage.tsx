@@ -10,6 +10,7 @@ function PanelPrueba({ carta, alAportar }: { carta: Carta; alAportar: (linea?: s
   const [foto, setFoto] = useState<string | null>(null)
   const [linea, setLinea] = useState('')
   const [salida, setSalida] = useState(false)
+  const [ubicacion, setUbicacion] = useState<'sin-comprobar' | 'comprobando' | 'fuera' | 'dentro' | 'error'>('sin-comprobar')
 
   useEffect(() => {
     const t = setTimeout(() => setSalida(true), 8000)
@@ -19,14 +20,59 @@ function PanelPrueba({ carta, alAportar }: { carta: Carta; alAportar: (linea?: s
   useEffect(() => () => { if (foto) URL.revokeObjectURL(foto) }, [foto])
 
   const prueba = carta.prueba!
+  const esUbicacion = Boolean(prueba.ubicacion)
+
+  async function comprobarUbicacion() {
+    if (!navigator.geolocation) {
+      setUbicacion('error')
+      return
+    }
+
+    setUbicacion('comprobando')
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        try {
+          const respuesta = await fetch(
+            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${coords.latitude}&longitude=${coords.longitude}&localityLanguage=es`,
+          )
+          if (!respuesta.ok) throw new Error('No se pudo consultar el país')
+          const datos = (await respuesta.json()) as { countryCode?: string }
+          setUbicacion(datos.countryCode === 'ES' ? 'dentro' : 'fuera')
+        } catch {
+          setUbicacion('error')
+        }
+      },
+      () => setUbicacion('error'),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 },
+    )
+  }
 
   return (
     <section className="prueba">
+      <p className="prueba__etiqueta">Antes de abrir</p>
       <h1>{carta.titulo}</h1>
       <p className="prueba__que">{prueba.texto}</p>
 
-      {foto ? (
-        <img className="prueba__foto" src={foto} alt="La foto que acabas de elegir" />
+      {esUbicacion ? (
+        <div className="prueba__ubicacion">
+          <p className="prueba__ubicacion-estado">
+            {ubicacion === 'fuera' && 'Estás fuera de España. Esta carta ya puede abrirse.'}
+            {ubicacion === 'dentro' && 'Parece que sigues en España. Todavía no es el momento.'}
+            {ubicacion === 'comprobando' && 'Comprobando dónde estás…'}
+            {ubicacion === 'error' && 'No hemos podido comprobar tu ubicación. Necesitamos permiso para verificarla.'}
+            {ubicacion === 'sin-comprobar' && 'Usaremos la ubicación del dispositivo para comprobar que estás fuera de España.'}
+          </p>
+          <button type="button" className="prueba__ubicacion-boton" onClick={comprobarUbicacion} disabled={ubicacion === 'comprobando'}>
+            {ubicacion === 'comprobando' ? 'Comprobando…' : 'Comprobar mi ubicación'}
+          </button>
+        </div>
+      ) : foto ? (
+        <div className="prueba__preview">
+          <img className="prueba__foto" src={foto} alt="La foto que acabas de elegir" />
+          <button type="button" className="enlace" onClick={() => setFoto(null)}>
+            cambiar foto
+          </button>
+        </div>
       ) : (
         <label className="prueba__subir">
           <input
@@ -49,8 +95,12 @@ function PanelPrueba({ carta, alAportar }: { carta: Carta; alAportar: (linea?: s
         </label>
       )}
 
-      <button type="button" disabled={!foto} onClick={() => alAportar(linea.trim() || undefined)}>
-        Ya está, ábrela
+      <button
+        type="button"
+        disabled={esUbicacion ? ubicacion !== 'fuera' : !foto}
+        onClick={() => alAportar(linea.trim() || undefined)}
+      >
+        {esUbicacion ? (ubicacion === 'fuera' ? 'Abrir la carta' : 'Comprueba tu ubicación para seguir') : foto ? 'Abrir la carta' : 'Elige una foto para seguir'}
       </button>
 
       {salida && (
@@ -104,9 +154,9 @@ function PlanTocado({ carta, plan, alHacerlo }: { carta: Carta; plan: Plan; alHa
         Díselo a {gente}. Se comprometió cuando escribimos esto.
       </p>
       <button type="button" className="enlace" onClick={alHacerlo}>
-        ya lo hemos hecho
+        marcar como hecho
       </button>
-      <span className="apagado"> · {carta.bombo!.length - 1} planes más ahí dentro</span>
+      <p className="apagado">{carta.bombo!.length - 1} planes más ahí dentro</p>
     </div>
   )
 }
@@ -171,7 +221,7 @@ export default function LetterPage() {
 
   const volver = (
     <Link to="/" className="volver">
-      ← todas las cartas
+      ← Todas las cartas
     </Link>
   )
 
@@ -198,7 +248,7 @@ export default function LetterPage() {
           <span className="sobre__lacre" aria-hidden="true" />
           <p className="carta__tipo">{NOMBRE_TIPO[carta.tipo]}</p>
           <h1>{carta.titulo}</h1>
-          <p className="apagado">Solo se abre una vez. Si es el momento, dale.</p>
+          <p className="apagado">Cuando la abras quedará guardada para volver a leerla.</p>
           <button
             type="button"
             disabled={!armada || abriendo}

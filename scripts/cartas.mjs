@@ -191,6 +191,7 @@ async function leerCartas() {
       carta.prueba = { texto: cabecera.prueba }
       if (cabecera.pregunta) carta.prueba.pregunta = cabecera.pregunta
       if (cabecera.camara === 'true') carta.prueba.camara = true
+      if (cabecera.ubicacion === 'true') carta.prueba.ubicacion = true
     }
     if (cuerpo) carta.cuerpo = parrafos(cuerpo)
     if (cabecera.voces) carta.voces = await leerVoces(cabecera.voces, f)
