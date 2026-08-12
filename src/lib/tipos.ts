@@ -51,9 +51,18 @@ export type FotoCarta = {
   pie?: string
 }
 
+/** Color de la casilla que le toca en la ruleta a una carta de misterio. */
+export const COLORES_CASILLA = ['rojo', 'negro', 'verde'] as const
+export type ColorCasilla = (typeof COLORES_CASILLA)[number]
+
 export type Carta = {
   id: string
   tipo: TipoCarta
+  /**
+   * Solo en las de misterio: en qué color de la ruleta vive. Si no se dice,
+   * se reparte sola entre rojas y negras. Las verdes (0 y 00) son las raras.
+   */
+  casilla?: ColorCasilla
   /** «Ábreme cuando…» */
   titulo: string
   /** Subtítulo que se lee en la lista sin abrir la carta. */
@@ -105,6 +114,15 @@ export type PruebaAportada = {
   linea?: string
 }
 
+/** Una tirada de la ruleta: lo que se paga y lo que sale. */
+export type Tirada = {
+  at: string
+  /** La casilla que salió: '0', '00', '7'… */
+  casilla: string
+  /** La carta de misterio que había detrás. */
+  cartaId: string
+}
+
 export type Sorteo = {
   planId: string
   at: string
@@ -117,16 +135,31 @@ export type Progreso = {
   pruebas: Record<string, PruebaAportada>
   /** Varios sorteos por carta: el bombo se puede volver a girar. */
   sorteos: Record<string, Sorteo[]>
+  /**
+   * Los días que ha entrado, en 'AAAA-MM-DD' de su reloj. De aquí salen los
+   * créditos y la racha; el saldo no se guarda nunca, se recalcula.
+   */
+  dias: Record<string, true>
+  /** Tiradas de la ruleta, con la hora en milisegundos como clave. */
+  tiradas: Record<string, Tirada>
   visits?: number
   lastSeen?: string
   tutorialAt?: string
 }
 
-export const PROGRESO_VACIO: Progreso = { opened: {}, pruebas: {}, sorteos: {} }
+export const PROGRESO_VACIO: Progreso = {
+  opened: {},
+  pruebas: {},
+  sorteos: {},
+  dias: {},
+  tiradas: {},
+}
 
 // --- Estado derivado de una carta -------------------------------------------
 
 export type EstadoCarta =
+  /** El mazo sigue sellado: todavía no ha terminado la intro de «La primera». */
+  | 'sellada'
   /** Aún no ha llegado su fecha. */
   | 'futura'
   /** Hay que aportar la prueba antes de poder abrirla. */

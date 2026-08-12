@@ -1,22 +1,20 @@
-import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useSession } from '../lib/session-context'
+import { introPendiente } from '../lib/estado'
 import { NOMBRE_TIPO, TIPOS_CARTA } from '../lib/tipos'
 
+/** La frase corta es la misma que sale en la intro: si cambia una, cambia la otra. */
 const QUE_ES: Record<string, string> = {
   primera: 'Solo hay una y ya la has abierto. Era el principio.',
-  normal: 'Las de siempre. Se abren cuando pase lo que pone en el título.',
-  misterio: 'No sabes lo que hay dentro. Al abrirla te toca algo al azar.',
-  reto: 'Te pide hacer algo que no has hecho nunca. Primero la lees, luego cumples.',
-  aparte: 'Las gordas. Mudarte fuera, cumplir años que pesan. No las gastes antes de tiempo.',
+  normal: '«Me pasó algo.» Un logro, una experiencia, algo que deja marca.',
+  misterio:
+    '«Ni idea de lo que hay dentro.» Una misión que hemos montado nosotros. No están en la lista: se ganan girando la ruleta, y girar cuesta créditos.',
+  reto: '«Me puse a prueba y lo conseguí.» Primero la lees, luego cumples.',
+  aparte: '«Mi vida cambió.» Las gordas, las que abren capítulo. No las gastes antes de tiempo.',
 }
 
 export default function ComoVa() {
-  const { tutorialVisto, status } = useSession()
-
-  useEffect(() => {
-    if (status === 'abierto') tutorialVisto()
-  }, [status, tutorialVisto])
+  const { progreso } = useSession()
 
   return (
     <main className="pantalla">
@@ -76,6 +74,15 @@ export default function ComoVa() {
         <p className="apagado">
           Esto no está acabado. Iremos metiendo cartas nuevas sin avisar.
         </p>
+
+        {/* Antes de acabarla, a la intro solo se llega leyendo «La primera». */}
+        {!introPendiente(progreso) && (
+          <p>
+            <Link to="/intro" className="enlace">
+              volver a ver la explicación del principio →
+            </Link>
+          </p>
+        )}
 
         <Link to="/" className="enlace">
           ← volver a las cartas

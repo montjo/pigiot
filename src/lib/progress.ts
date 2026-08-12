@@ -1,7 +1,19 @@
 import { getDb } from './firebase'
-import { PROGRESO_VACIO, type Apertura, type Progreso, type Sorteo } from './tipos'
+import { hoy } from './economia'
+import { PROGRESO_VACIO, type Apertura, type Progreso, type Sorteo, type Tirada } from './tipos'
 
 const localKey = (progressId: string) => `pigiot:progress:${progressId}`
+
+/**
+ * Modo ensayo: el progreso vive solo en memoria durante esa pestaña. Ni se lee
+ * lo que ya había ni se escribe nada, así se puede ver la web como el primer
+ * día sin tocar el registro de verdad, que es irrecuperable.
+ */
+let efimero = false
+
+export function modoEfimero(activo: boolean) {
+  efimero = activo
+}
 
 function dispositivo(): string {
   const ua = navigator.userAgent
@@ -14,6 +26,7 @@ function dispositivo(): string {
 }
 
 export function leerLocal(progressId: string): Progreso {
+  if (efimero) return PROGRESO_VACIO
   try {
     const raw = localStorage.getItem(localKey(progressId))
     return raw ? { ...PROGRESO_VACIO, ...(JSON.parse(raw) as Progreso) } : PROGRESO_VACIO
@@ -23,6 +36,7 @@ export function leerLocal(progressId: string): Progreso {
 }
 
 function escribirLocal(progressId: string, progreso: Progreso) {
+  if (efimero) return
   try {
     localStorage.setItem(localKey(progressId), JSON.stringify(progreso))
   } catch {
@@ -50,6 +64,10 @@ function fusionar(a: Progreso, b: Progreso): Progreso {
     opened,
     pruebas: { ...b.pruebas, ...a.pruebas },
     sorteos,
+    // Días y tiradas solo se suman: de aquí salen los créditos, y perder una
+    // tirada al fusionar sería regalar 200 créditos que ya se habían gastado.
+    dias: { ...b.dias, ...a.dias },
+    tiradas: { ...b.tiradas, ...a.tiradas },
     visits: Math.max(a.visits ?? 0, b.visits ?? 0),
     lastSeen: (a.lastSeen ?? '') > (b.lastSeen ?? '') ? a.lastSeen : b.lastSeen,
     tutorialAt: a.tutorialAt ?? b.tutorialAt,
@@ -61,6 +79,7 @@ function fusionar(a: Progreso, b: Progreso): Progreso {
  * con la caché persistente de Firestore, setDoc no resuelve mientras no hay red.
  */
 function enviar(progressId: string, datos: Record<string, unknown>) {
+  if (efimero) return
   void (async () => {
     const db = await getDb()
     if (!db) return
@@ -71,6 +90,7 @@ function enviar(progressId: string, datos: Record<string, unknown>) {
 
 /** Carga el progreso al entrar. Si la red tarda, se sigue con lo local. */
 export async function cargarProgreso(progressId: string): Promise<Progreso> {
+  if (efimero) return PROGRESO_VACIO
   const local = leerLocal(progressId)
   const db = await getDb()
   if (!db) return local
@@ -154,6 +174,29 @@ export function marcarPlanHecho(
   }
   escribirLocal(progressId, next)
   enviar(progressId, { sorteos: next.sorteos })
+  return next
+}
+
+/** Apunta que hoy ha entrado. De esta lista salen los créditos y la racha. */
+export function marcarDia(progressId: string, actual: Progreso): Progreso {
+  const dia = hoy()
+  if (actual.dias?.[dia]) return actual
+  const next: Progreso = { ...actual, dias: { ...actual.dias, [dia]: true } }
+  escribirLocal(progressId, next)
+  enviar(progressId, { dias: { [dia]: true } })
+  return next
+}
+
+/** Una tirada gastada. La clave es la hora en milisegundos: nunca chocan. */
+export function guardarTirada(
+  progressId: string,
+  actual: Progreso,
+  tirada: Tirada,
+): Progreso {
+  const clave = String(Date.now())
+  const next: Progreso = { ...actual, tiradas: { ...actual.tiradas, [clave]: tirada } }
+  escribirLocal(progressId, next)
+  enviar(progressId, { tiradas: { [clave]: tirada } })
   return next
 }
 

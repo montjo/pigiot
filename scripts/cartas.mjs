@@ -21,6 +21,8 @@ const SALIDA = new URL('public/letters.enc.json', RAIZ)
 const ITERACIONES = 600_000
 
 const TIPOS = ['primera', 'normal', 'misterio', 'reto', 'aparte']
+/** Solo en las de misterio: en qué color de la ruleta cae. Ver src/lib/economia.ts. */
+const COLORES_CASILLA = ['rojo', 'negro', 'verde']
 const MIME = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp' }
 
 const avisos = []
@@ -182,7 +184,18 @@ async function leerCartas() {
       morir(`${f}: "desde" tiene que ser AAAA-MM-DD. He encontrado: ${cabecera.desde}`)
     }
 
+    if (cabecera.casilla && !COLORES_CASILLA.includes(cabecera.casilla)) {
+      morir(
+        `${f}: "casilla" solo puede ser ${COLORES_CASILLA.join(', ')}.\n` +
+          `  He encontrado: ${cabecera.casilla}`,
+      )
+    }
+    if (cabecera.casilla && tipo !== 'misterio') {
+      morir(`${f}: "casilla" es solo de las cartas de misterio, y esta es "${tipo}".`)
+    }
+
     const carta = { id, tipo, titulo: cabecera.titulo }
+    if (cabecera.casilla) carta.casilla = cabecera.casilla
     if (cabecera.pista) carta.pista = cabecera.pista
     if (cabecera.escritaEl) carta.escritaEl = cabecera.escritaEl
     if (cabecera.desde) carta.desde = cabecera.desde

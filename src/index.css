@@ -517,7 +517,8 @@ button:disabled {
 
 .cabecera h1::after,
 .papel h1::after,
-.prueba h1::after {
+.prueba h1::after,
+.intro__hoja h1::after {
   content: '';
   display: block;
   width: 3.3rem;
@@ -536,6 +537,11 @@ button:disabled {
   line-height: 1.45;
 }
 
+/* Con el mazo sellado no hay resumen que contar, y el hueco de abajo sobra. */
+.cabecera:not(:has(.resumen)) .cabecera__intro {
+  margin-bottom: 0;
+}
+
 .modo-revision {
   display: inline-block;
   margin: 0.4rem 0 0;
@@ -545,6 +551,12 @@ button:disabled {
   background: rgba(157, 56, 50, 0.1);
   font-size: 0.78rem;
   letter-spacing: 0.02em;
+}
+
+.modo-revision a {
+  color: inherit;
+  font-weight: 700;
+  text-underline-offset: 3px;
 }
 
 .resumen {
@@ -925,7 +937,8 @@ ul.diario {
 
 .sobre,
 .papel,
-.prueba {
+.prueba,
+.intro__hoja {
   border: 1px solid rgba(255, 247, 232, 0.54);
   border-radius: var(--radio);
   background:
@@ -1039,7 +1052,8 @@ ul.diario {
 }
 
 .papel::before,
-.prueba::before {
+.prueba::before,
+.intro__hoja::before {
   content: '';
   position: absolute;
   inset: 0 0 auto;
@@ -1048,7 +1062,8 @@ ul.diario {
 }
 
 .papel > *,
-.prueba > * {
+.prueba > *,
+.intro__hoja > * {
   position: relative;
   z-index: 1;
 }
@@ -1397,6 +1412,694 @@ ul.diario {
   text-transform: uppercase;
 }
 
+/* Un enlace con pinta de botón. Los <button> ya tienen el suyo más arriba. */
+.boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0.8rem 1.15rem;
+  border: 1px solid transparent;
+  border-radius: var(--radio-sm);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), transparent),
+    linear-gradient(135deg, var(--lacre), #7e332b);
+  color: #fff9ef;
+  font-family: var(--sans);
+  font-size: 0.96rem;
+  font-weight: 760;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  box-shadow: 0 13px 26px rgba(57, 18, 14, 0.24);
+  transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
+}
+
+.boton--tipo {
+  background: var(--color-tipo, var(--lacre));
+}
+
+.boton:active {
+  transform: translateY(1px);
+  box-shadow: 0 5px 12px rgba(125, 48, 44, 0.14);
+}
+
+@media (hover: hover) {
+  .boton:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.06);
+  }
+}
+
+/* --- Créditos y ruleta ----------------------------------------------------- */
+
+.creditos {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.creditos__cifras {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+  font-family: var(--sans);
+}
+
+.creditos__saldo {
+  font-size: 1.32rem;
+  font-weight: 840;
+  letter-spacing: -0.01em;
+  color: var(--oro);
+}
+
+.creditos__unidad {
+  font-size: 0.74rem;
+  font-weight: 760;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.creditos__listas,
+.creditos__faltan {
+  font-size: 0.76rem;
+  font-weight: 820;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.creditos__listas {
+  padding: 0.16rem 0.5rem;
+  border-radius: 999px;
+  background: var(--oro);
+  color: #241703;
+}
+
+.creditos__faltan {
+  color: rgba(255, 247, 232, 0.55);
+}
+
+.creditos__barra {
+  position: relative;
+  overflow: hidden;
+  height: 12px;
+  border: 1px solid rgba(255, 247, 232, 0.22);
+  border-radius: 999px;
+  background: rgba(7, 29, 30, 0.5);
+}
+
+.creditos__barra > span {
+  display: block;
+  height: 100%;
+  transform-origin: left;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 9px,
+      rgba(7, 29, 30, 0.55) 9px 12px
+    ),
+    linear-gradient(90deg, #8a6320, var(--oro));
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.creditos__barra--llena > span {
+  background:
+    repeating-linear-gradient(90deg, transparent 0 9px, rgba(7, 29, 30, 0.45) 9px 12px),
+    linear-gradient(90deg, var(--oro), #ffd489);
+  box-shadow: 0 0 18px rgba(180, 137, 77, 0.75);
+}
+
+/* El acceso desde la portada. */
+.acceso {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.95rem;
+  align-items: center;
+  margin: 1.2rem 0 1.6rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(180, 137, 77, 0.45);
+  border-radius: var(--radio);
+  background:
+    radial-gradient(120% 140% at 0% 50%, rgba(180, 137, 77, 0.18), transparent 60%),
+    rgba(7, 29, 30, 0.5);
+  backdrop-filter: blur(8px);
+  color: rgba(255, 247, 232, 0.92);
+  text-decoration: none;
+  transition: border-color 0.18s ease, transform 0.18s ease;
+}
+
+.acceso--aviso {
+  border-color: var(--oro);
+  box-shadow: 0 0 0 1px rgba(180, 137, 77, 0.35), 0 16px 34px rgba(0, 0, 0, 0.3);
+}
+
+.acceso:active {
+  transform: translateY(1px);
+}
+
+.acceso__rueda {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 247, 232, 0.5);
+  background:
+    conic-gradient(
+      var(--verde) 0 12.5%,
+      #16161e 12.5% 25%,
+      var(--lacre) 25% 37.5%,
+      #16161e 37.5% 50%,
+      var(--verde) 50% 62.5%,
+      #16161e 62.5% 75%,
+      var(--lacre) 75% 87.5%,
+      #16161e 87.5% 100%
+    );
+  box-shadow: inset 0 0 0 6px rgba(255, 247, 232, 0.12), 0 8px 18px rgba(0, 0, 0, 0.35);
+}
+
+.acceso__texto {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.acceso__eti {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 840;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--oro);
+}
+
+.acceso__que {
+  font-size: 1.06rem;
+  line-height: 1.25;
+}
+
+.creditos--compacta .creditos__cifras {
+  font-size: 0.9rem;
+}
+
+.creditos--compacta .creditos__saldo {
+  font-size: 1rem;
+}
+
+.creditos--compacta .creditos__barra {
+  height: 8px;
+}
+
+/* La página de la ruleta. */
+.ruleta__cabecera {
+  margin-bottom: 1.1rem;
+  color: rgba(255, 247, 232, 0.92);
+}
+
+.ruleta__cabecera h1 {
+  margin-bottom: 0.5rem;
+}
+
+.ruleta__eti {
+  margin: 0 0 0.3rem;
+  color: var(--oro);
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 840;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ruleta__cabecera .apagado,
+.ruleta__mando .apagado,
+.ruleta__cuentas .apagado {
+  color: rgba(255, 247, 232, 0.62);
+}
+
+.rueda {
+  width: min(100%, 22rem);
+  margin: 1.4rem auto 1.1rem;
+  filter: drop-shadow(0 24px 40px rgba(0, 0, 0, 0.45));
+}
+
+.rueda svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.rueda__disco {
+  transform-origin: 100px 100px;
+}
+
+.rueda__aro {
+  fill: #0d1f20;
+  stroke: rgba(180, 137, 77, 0.75);
+  stroke-width: 3;
+}
+
+.rueda__hueco {
+  stroke: rgba(255, 247, 232, 0.28);
+  stroke-width: 0.6;
+}
+
+.rueda__hueco--rojo { fill: #9d3832; }
+.rueda__hueco--negro { fill: #16161e; }
+.rueda__hueco--verde { fill: #1f7a5c; }
+
+.rueda__hueco.es-usada {
+  opacity: 0.34;
+}
+
+.rueda__n {
+  fill: rgba(255, 247, 232, 0.9);
+  font-family: var(--sans);
+  font-size: 9px;
+  font-weight: 800;
+  text-anchor: middle;
+}
+
+.rueda__centro {
+  fill: #0d1f20;
+  stroke: rgba(180, 137, 77, 0.8);
+  stroke-width: 2;
+}
+
+.rueda__aguja {
+  fill: var(--oro);
+  stroke: #241703;
+  stroke-width: 1;
+}
+
+.ruleta__mando {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  text-align: center;
+}
+
+.ruleta__boton {
+  min-width: min(100%, 18rem);
+  background: linear-gradient(135deg, #8a6320, var(--oro));
+  color: #241703;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+}
+
+.ruleta__vivas {
+  font-size: 0.82rem;
+}
+
+.premio {
+  margin: 1.6rem 0 0;
+  padding: 1.5rem 1.1rem;
+  border: 1px solid rgba(255, 247, 232, 0.35);
+  border-radius: var(--radio);
+  text-align: center;
+  color: #fff9ef;
+  animation: aparecer 0.4s ease both;
+}
+
+.premio--rojo { background: linear-gradient(160deg, #9d3832, #5e211c); }
+.premio--negro { background: linear-gradient(160deg, #24242e, #101016); }
+.premio--verde { background: linear-gradient(160deg, #1f7a5c, #10402f); }
+
+.premio__eti {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 840;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.premio__n {
+  margin: 0.2rem 0 0.4rem;
+  font-size: 3.6rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.premio__que {
+  max-width: 24rem;
+  margin: 0 auto 1.1rem;
+  font-family: var(--sans);
+  font-size: 0.94rem;
+}
+
+.premio .boton {
+  background: rgba(255, 247, 232, 0.94);
+  color: var(--tinta);
+}
+
+.ruleta__pendientes {
+  margin-top: 1.7rem;
+}
+
+.ruleta__cuentas {
+  margin-top: 2rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid rgba(255, 247, 232, 0.18);
+}
+
+.ruleta__cuentas h2 {
+  margin-bottom: 0.7rem;
+  color: rgba(255, 247, 232, 0.72);
+}
+
+.cuentas {
+  list-style: none;
+  margin: 0 0 0.9rem;
+  padding: 0;
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  color: rgba(255, 247, 232, 0.86);
+}
+
+.cuentas li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px dotted rgba(255, 247, 232, 0.16);
+}
+
+.cuentas li span:last-child {
+  flex: none;
+  color: var(--oro);
+  font-weight: 800;
+}
+
+/* --- El mazo sellado del principio ---------------------------------------- */
+
+.mazo {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 1.15rem;
+  align-items: center;
+  margin-top: 1.7rem;
+  padding: 1.15rem 1.1rem;
+  border: 1px dashed rgba(255, 247, 232, 0.3);
+  border-radius: var(--radio);
+  background: rgba(7, 29, 30, 0.32);
+  backdrop-filter: blur(8px);
+}
+
+.mazo__pila {
+  width: 2.5rem;
+  height: 3.3rem;
+  border-radius: 5px;
+  background: var(--papel-hondo);
+  transform: rotate(-5deg);
+  box-shadow:
+    5px 5px 0 -1px rgba(234, 216, 189, 0.7),
+    10px 10px 0 -2px rgba(234, 216, 189, 0.42),
+    0 14px 26px rgba(0, 0, 0, 0.32);
+}
+
+.mazo__eti {
+  margin: 0 0 0.1rem;
+  color: rgba(255, 247, 232, 0.6);
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 840;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.mazo__n {
+  margin: 0 0 0.35rem;
+  color: rgba(255, 247, 232, 0.94);
+  font-size: 1.32rem;
+  line-height: 1.2;
+}
+
+.mazo .apagado {
+  color: rgba(255, 247, 232, 0.62);
+}
+
+/* Dejó la intro a medias: hay que devolverle allí sin regañarle. */
+.aviso-intro {
+  margin: 1.2rem 0 1.5rem;
+  padding: 1.15rem 1.1rem;
+  border: 1px solid rgba(180, 137, 77, 0.5);
+  border-left: 4px solid var(--oro);
+  border-radius: var(--radio);
+  background: linear-gradient(145deg, rgba(255, 253, 247, 0.95), rgba(255, 247, 232, 0.86));
+  box-shadow: var(--sombra-corta);
+}
+
+.aviso-intro__eti {
+  margin: 0 0 0.35rem;
+  color: var(--tipo-primera);
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 840;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.aviso-intro__que {
+  max-width: 32rem;
+  margin: 0 0 1rem;
+  font-size: 1.02rem;
+  line-height: 1.5;
+}
+
+/* El relevo al final de «La primera». */
+.siguiente {
+  margin: 1.8rem 0 0.3rem;
+  padding-top: 1.35rem;
+  border-top: 1px solid var(--linea);
+  text-align: center;
+}
+
+.siguiente__eti {
+  margin: 0 0 0.4rem;
+  color: var(--color-tipo, var(--lacre));
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 840;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.siguiente__que {
+  max-width: 27rem;
+  margin: 0 auto 1.05rem;
+  font-family: var(--sans);
+  font-size: 0.96rem;
+  line-height: 1.5;
+}
+
+/* --- La intro de la primera vez ------------------------------------------- */
+
+.intro {
+  display: flex;
+  flex-direction: column;
+  gap: 1.05rem;
+  padding-top: 0.4rem;
+}
+
+.intro__barra {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.intro__cuenta {
+  flex: none;
+  color: rgba(255, 247, 232, 0.66);
+  font-family: var(--sans);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.intro__barrita {
+  flex: 1;
+  overflow: hidden;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 247, 232, 0.16);
+}
+
+.intro__barrita span {
+  display: block;
+  height: 100%;
+  transform-origin: left;
+  background: var(--color-tipo, var(--oro));
+  transition: transform 0.35s ease;
+}
+
+.intro__voz {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex: none;
+  min-height: 38px;
+  padding: 0.28rem 0.7rem;
+  border: 1px solid rgba(255, 247, 232, 0.28);
+  border-radius: 999px;
+  background: rgba(255, 247, 232, 0.1);
+  color: rgba(255, 247, 232, 0.88);
+  font-size: 0.8rem;
+  box-shadow: none;
+}
+
+.intro__voz-icono {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.intro__voz:not([aria-pressed='true']) .intro__voz-icono {
+  opacity: 0.7;
+}
+
+.intro__voz[aria-pressed='true'] {
+  border-color: rgba(180, 137, 77, 0.9);
+  background: rgba(180, 137, 77, 0.3);
+  color: #fff9ef;
+}
+
+.intro__hoja {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 19rem;
+  padding: 1.7rem 1.15rem;
+  animation: aparecer 0.34s ease both;
+}
+
+.intro__hoja h1 {
+  max-width: 19ch;
+  margin-bottom: 0;
+}
+
+.intro__hoja h1::after {
+  margin-bottom: 1.15rem;
+}
+
+.intro__hoja p {
+  margin-bottom: 0.85rem;
+}
+
+.intro__hoja > p:last-child {
+  margin-bottom: 0;
+}
+
+.intro__eti {
+  margin-bottom: 0.5rem;
+  color: var(--color-tipo, var(--lacre));
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 840;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.intro__frase {
+  color: var(--color-tipo, var(--tinta));
+  font-size: 1.4rem;
+  font-style: italic;
+  line-height: 1.25;
+}
+
+.intro__tipos {
+  display: grid;
+  gap: 0.45rem;
+  list-style: none;
+  margin: 0.2rem 0 0.9rem;
+  padding: 0;
+}
+
+.intro__tipos li {
+  display: grid;
+  grid-template-columns: 1.7rem minmax(0, 1fr);
+  column-gap: 0.7rem;
+  align-items: center;
+  padding: 0.55rem 0.7rem;
+  border-left: 3px solid var(--color-tipo);
+  border-radius: 0 var(--radio-sm) var(--radio-sm) 0;
+  background: rgba(255, 253, 247, 0.6);
+}
+
+.intro__emoji {
+  font-size: 1.15rem;
+  text-align: center;
+}
+
+.intro__tipos strong {
+  display: block;
+  color: var(--color-tipo);
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 840;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.intro__tipos em {
+  font-size: 1.02rem;
+}
+
+.intro__pie {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.intro__pie > button,
+.intro__pie > .boton {
+  width: min(100%, 21rem);
+}
+
+.intro__secundario {
+  border-color: rgba(255, 247, 232, 0.3);
+  background: rgba(255, 247, 232, 0.12);
+  color: rgba(255, 247, 232, 0.9);
+  box-shadow: none;
+}
+
+.intro__extras {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.2rem 1.2rem;
+}
+
+.intro__extras .enlace {
+  color: rgba(255, 247, 232, 0.7);
+  text-decoration-color: rgba(255, 247, 232, 0.32);
+}
+
+@media (hover: hover) {
+  .intro__secundario:hover:not(:disabled) {
+    background: rgba(255, 247, 232, 0.2);
+  }
+
+  /* Estos ganan al hover genérico de los botones, que aquí pintaría un lacre. */
+  .intro__voz:hover:not(:disabled) {
+    background: rgba(255, 247, 232, 0.18);
+    box-shadow: none;
+  }
+
+  .intro__voz[aria-pressed='true']:hover:not(:disabled) {
+    background: rgba(180, 137, 77, 0.4);
+  }
+
+  .intro__extras .enlace:hover {
+    background: none;
+    box-shadow: none;
+    color: rgba(255, 247, 232, 0.95);
+    text-decoration-color: currentColor;
+  }
+}
+
 @media (min-width: 46rem) {
   .pantalla {
     padding-block: 2rem 5rem;
@@ -1480,8 +2183,23 @@ ul.diario {
   .puerta,
   .papel,
   .sobre,
-  .prueba {
+  .prueba,
+  .intro__hoja {
     border-radius: var(--radio);
+  }
+
+  .intro__hoja {
+    min-height: 17rem;
+    padding: 1.35rem 1rem;
+  }
+
+  .intro__frase {
+    font-size: 1.25rem;
+  }
+
+  .mazo {
+    gap: 0.9rem;
+    padding: 1rem 0.9rem;
   }
 
   .puerta {

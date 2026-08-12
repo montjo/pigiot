@@ -32,6 +32,23 @@ una línea en blanco (`\n\n`).
 **No cambies el `id` de una carta ya publicada**: el progreso se guarda por `id` y
 si lo cambias parecerá que nunca la abrió.
 
+### Las de misterio y la ruleta
+
+Las cartas con `tipo: misterio` **no salen en la lista**: se reparten por las
+casillas de la ruleta (`/#/ruleta`) y solo se leen si le tocan. El reparto es
+automático y por orden de `id`, así que añadir una nueva no mueve las anteriores.
+Con `casilla: verde` en la cabecera, esa carta va a una de las dos casillas verdes
+(0 y 00), que son las raras; sin `casilla`, va a las rojas y negras.
+
+Girar cuesta créditos, y los créditos salen de entrar cada día (con racha), abrir
+cartas del mazo, cumplir pruebas y hacer planes del bombo. **Todos los números están
+en `src/lib/economia.ts`, en la constante `ECONOMIA`**, para recalibrarlos de una
+pasada. Tal y como están: una tirada son 200 créditos y una semana entrando cada día
+da 150, así que sale una tirada cada nueve o diez días si no hace nada más. Al
+terminar la intro se regalan 200 para que la primera tirada sea inmediata.
+
+El saldo no se guarda en ningún sitio: se recalcula siempre a partir del registro.
+
 Cuando estén escritas:
 
 ```bash
@@ -58,6 +75,11 @@ El script imprime también el `progressId`, que necesitas en el paso 2.
 El plan gratuito (Spark) no pide tarjeta y da 50.000 lecturas al día. Aquí vas a
 gastar unas decenas al mes.
 
+> **Si ya las tenías pegadas, vuelve a pegarlas.** Las reglas llevan la lista de
+> campos permitidos, y los créditos añadieron dos (`dias` y `tiradas`). Sin
+> republicarlas, los días y las tiradas no llegan a la nube: el saldo funciona en
+> el móvil donde esté jugando, pero no le sigue a otro aparato.
+
 ## 3. Contraseña del panel de progreso
 
 ```bash
@@ -66,6 +88,15 @@ npm run hash -- "vuestra-contraseña"
 
 Pega el resultado en `VITE_ADMIN_PASSWORD_HASH` dentro de `.env`. El panel está en
 `/#/progreso`.
+
+### Ver la web como el primer día
+
+Añade `?ensayo` a la dirección (`/pigiot/?ensayo`, hay un enlace en el panel de
+progreso). Se entra con su contraseña de siempre, pero el progreso arranca vacío y
+vive solo en memoria: ni se lee lo que ya había ni se guarda nada, ni en el móvil ni
+en Firestore. Sirve para repasar el arranque —todo el mazo sellado menos «La
+primera», y la intro que lo desbloquea— sin tocar su registro, que es
+irrecuperable. Se sale recargando sin `?ensayo`.
 
 ## 4. Publicar en GitHub Pages
 

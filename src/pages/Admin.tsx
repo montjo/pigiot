@@ -5,6 +5,7 @@ import { isFirebaseConfigured } from '../lib/firebase'
 import { verProgreso } from '../lib/progress'
 import { useSession } from '../lib/session-context'
 import { formatearFecha } from '../lib/estado'
+import { contar } from '../lib/economia'
 import { PROGRESO_VACIO, type Progreso } from '../lib/tipos'
 
 const HASH = import.meta.env.VITE_ADMIN_PASSWORD_HASH ?? ''
@@ -71,6 +72,7 @@ export default function Admin() {
   }
 
   const p = progreso ?? PROGRESO_VACIO
+  const cuenta = contar(p, cartas)
   const titulo = (id: string) => cartas.find((c) => c.id === id)?.titulo ?? id
   const abiertas = Object.entries(p.opened).sort(([, a], [, b]) => (a.at < b.at ? 1 : -1))
 
@@ -97,7 +99,18 @@ export default function Admin() {
         <h1>Progreso</h1>
         <p className="apagado">
           {abiertas.length} {abiertas.length === 1 ? 'carta abierta' : 'cartas abiertas'}
-          {p.tutorialAt && ' · ha leído el tutorial'}
+          {p.tutorialAt && ' · ha visto la intro'}
+        </p>
+        <p className="apagado">
+          {cuenta.saldo} créditos · {Object.keys(p.dias ?? {}).length} días por aquí
+          {cuenta.racha > 0 && ` · racha de ${cuenta.racha}`} ·{' '}
+          {Object.keys(p.tiradas ?? {}).length} tiradas
+        </p>
+        {/* Recarga entera: el modo ensayo se decide antes de montar la sesión. */}
+        <p>
+          <a className="enlace" href={`${import.meta.env.BASE_URL}?ensayo`}>
+            ver la web como el primer día →
+          </a>
         </p>
       </header>
 

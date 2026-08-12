@@ -6,6 +6,9 @@ rules_version = '2';
 // vaciar el registro. Sin esto, cualquiera que lea el repo puede borrar de un
 // golpe el histórico entero de aperturas, que es irrecuperable.
 //
+// `dias` y `tiradas` son de donde salen los créditos de la ruleta: si se
+// pudieran borrar tiradas, se recuperarían créditos ya gastados.
+//
 // El álbum es de SOLO CREAR: una foto subida ya no se puede modificar ni
 // borrar desde la web. Para borrar una foto, hazlo desde esta misma consola.
 
@@ -14,7 +17,7 @@ service cloud.firestore {
 
     function progresoValido() {
       return request.resource.data.keys().hasOnly(
-        ['opened', 'pruebas', 'sorteos', 'visits', 'lastSeen', 'tutorialAt']);
+        ['opened', 'pruebas', 'sorteos', 'dias', 'tiradas', 'visits', 'lastSeen', 'tutorialAt']);
     }
 
     // Solo añade: cada mapa debe conservar todas las claves que ya tenía.
@@ -30,7 +33,9 @@ service cloud.firestore {
                     && progresoValido()
                     && conserva('opened')
                     && conserva('pruebas')
-                    && conserva('sorteos');
+                    && conserva('sorteos')
+                    && conserva('dias')
+                    && conserva('tiradas');
     }
 
     // Miniatura cifrada + metadatos. Se lee para pintar la retícula del álbum.

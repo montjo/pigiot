@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react'
-import type { Carta, Plan, Progreso } from './tipos'
+import type { Carta, Plan, Progreso, Tirada } from './tipos'
 
 export type SessionState = {
   status: 'cargando' | 'bloqueado' | 'abierto' | 'error'
@@ -14,11 +14,15 @@ export type SessionState = {
   /** Cuántas veces ha fallado la contraseña en esta pantalla. */
   fallos: number
   modoRevision: boolean
+  /** Ensayo: se ve la web desde cero y nada se guarda en ningún sitio. */
+  modoEnsayo: boolean
   unlock: (password: string) => Promise<boolean>
   lock: () => void
   abrir: (cartaId: string) => void
   aportarPrueba: (cartaId: string, datos: { fotoId?: string; linea?: string }) => void
   girarBombo: (cartaId: string) => Plan | null
+  /** Cobra una tirada y devuelve la casilla que ha salido. */
+  girarRuleta: () => Tirada | null
   planHecho: (cartaId: string, planId: string) => void
   tutorialVisto: () => void
 }

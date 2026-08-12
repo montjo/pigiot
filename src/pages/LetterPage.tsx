@@ -1,7 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { useSession } from '../lib/session-context'
-import { estadoDeCarta, formatearFecha, planPendiente, planesDisponibles } from '../lib/estado'
+import {
+  estadoDeCarta,
+  formatearFecha,
+  introPendiente,
+  planPendiente,
+  planesDisponibles,
+} from '../lib/estado'
 import { NOMBRE_TIPO, type Carta, type Plan } from '../lib/tipos'
 
 const ARMADO_MS = 700
@@ -221,11 +227,11 @@ export default function LetterPage() {
 
   if (status === 'cargando') return <main className="pantalla pantalla--centro">…</main>
   if (status !== 'abierto') return <Navigate to="/" replace />
-  if (!carta || estado === 'futura') return <Navigate to="/" replace />
+  if (!carta || estado === 'futura' || estado === 'sellada') return <Navigate to="/" replace />
 
   const volver = (
-    <Link to="/" className="volver">
-      ← Todas las cartas
+    <Link to={carta.tipo === 'misterio' ? '/ruleta' : '/'} className="volver">
+      {carta.tipo === 'misterio' ? '← La ruleta' : '← Todas las cartas'}
     </Link>
   )
 
@@ -308,11 +314,22 @@ export default function LetterPage() {
           )}
         </p>
 
-        {carta.tipo === 'primera' && (
-          <Link to="/como-va" className="enlace">
-            y ahora, cómo va esto →
-          </Link>
-        )}
+        {carta.tipo === 'primera' &&
+          (introPendiente(progreso) ? (
+            <section className="siguiente">
+              <p className="siguiente__eti">Y ahora</p>
+              <p className="siguiente__que">
+                Un minuto para contarte cómo va esto. Al acabar se abre el resto del mazo.
+              </p>
+              <Link to="/intro" className="boton boton--tipo">
+                Cómo funciona
+              </Link>
+            </section>
+          ) : (
+            <Link to="/como-va" className="enlace">
+              y ahora, cómo va esto →
+            </Link>
+          ))}
       </article>
     </main>
   )

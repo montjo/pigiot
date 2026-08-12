@@ -1,7 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useSession } from '../lib/session-context'
-import { cartasVisibles, estadoDeCarta, formatearFecha } from '../lib/estado'
+import {
+  cartasDelMazo,
+  cartasVisibles,
+  estadoDeCarta,
+  formatearFecha,
+  introPendiente,
+} from '../lib/estado'
+import { contar, misteriosGanados, type Cuenta } from '../lib/economia'
+import { BarraCreditos } from '../components/Creditos'
 import { NOMBRE_TIPO, type Carta, type EstadoCarta, type Progreso } from '../lib/tipos'
 
 const MARCA_VISITA = 'pigiot:ha-entrado'
@@ -119,6 +127,7 @@ function Puerta() {
 }
 
 const ETIQUETA: Record<EstadoCarta, string> = {
+  sellada: 'sellada',
   futura: 'más adelante',
   'pide-prueba': 'pide prueba',
   cerrada: 'abrir',
@@ -202,8 +211,64 @@ function SeccionCartas({
   )
 }
 
+/** El resto del mazo, sin decir qué hay dentro: solo cuántas son. */
+function MazoSellado({ cuantas, empezada }: { cuantas: number; empezada: boolean }) {
+  return (
+    <section className="mazo">
+      <span className="mazo__pila" aria-hidden="true" />
+      <div className="mazo__texto">
+        <p className="mazo__eti">El resto del mazo</p>
+        <p className="mazo__n">
+          {cuantas} {cuantas === 1 ? 'carta cerrada' : 'cartas cerradas'}
+        </p>
+        <p className="apagado">
+          {empezada
+            ? 'Se abren en cuanto termines la explicación de arriba.'
+            : 'Se abren en cuanto acabes con la primera.'}{' '}
+          Están ahí, no se van a ningún sitio.
+        </p>
+      </div>
+    </section>
+  )
+}
+
+/** El acceso rápido a la ruleta: lo primero que se ve al entrar. */
+function AccesoRuleta({ cuenta, sinAbrir }: { cuenta: Cuenta; sinAbrir: number }) {
+  return (
+    <Link to="/ruleta" className={`acceso${sinAbrir > 0 ? ' acceso--aviso' : ''}`}>
+      <span className="acceso__rueda" aria-hidden="true" />
+      <span className="acceso__texto">
+        <span className="acceso__eti">La ruleta</span>
+        <span className="acceso__que">
+          {sinAbrir > 0
+            ? `Te tocó ${sinAbrir === 1 ? 'una carta' : `${sinAbrir} cartas`} y no la has abierto`
+            : cuenta.tiradasListas > 0
+              ? 'Puedes girar ya'
+              : 'Cartas de misterio'}
+        </span>
+        <BarraCreditos cuenta={cuenta} compacta />
+      </span>
+    </Link>
+  )
+}
+
+/** Abrió «La primera» pero dejó la intro a medias: sin ella no se abre el mazo. */
+function AvisoIntro() {
+  return (
+    <section className="aviso-intro">
+      <p className="aviso-intro__eti">Te falta un minuto</p>
+      <p className="aviso-intro__que">
+        Te dejaste a medias cómo funciona esto. Cuando lo acabes se abre el resto del mazo.
+      </p>
+      <Link to="/intro" className="boton">
+        Seguir donde lo dejaste
+      </Link>
+    </section>
+  )
+}
+
 export default function Home() {
-  const { status, error, cartas, progreso, lock, modoRevision } = useSession()
+  const { status, error, cartas, progreso, lock, modoRevision, modoEnsayo } = useSession()
 
   if (status === 'cargando') return <main className="pantalla pantalla--centro">…</main>
   if (status === 'error')
@@ -214,7 +279,8 @@ export default function Home() {
     )
   if (status === 'bloqueado') return <Puerta />
 
-  const visibles = cartasVisibles(cartas, progreso, new Date(), modoRevision)
+  // Las de misterio no salen aquí: se ganan en la ruleta y viven en su página.
+  const visibles = cartasVisibles(cartasDelMazo(cartas), progreso, new Date(), modoRevision)
   const conEstado = visibles.map((c) => ({ carta: c, estado: estadoDeCarta(c, progreso, new Date(), modoRevision) }))
   const paraAbrir = conEstado.filter(
     (x) => x.estado === 'cerrada' || x.estado === 'pide-prueba' || x.estado === 'a-medias',
@@ -223,6 +289,11 @@ export default function Home() {
     .filter((x) => x.estado === 'abierta')
     .sort((a, b) => (progreso.opened[a.carta.id].at < progreso.opened[b.carta.id].at ? 1 : -1))
   const futuras = conEstado.filter((x) => x.estado === 'futura')
+  const selladas = conEstado.filter((x) => x.estado === 'sellada')
+  /** Ya leyó la primera pero no acabó la intro: hay que devolverle allí. */
+  const introAMedias = introPendiente(progreso) && conEstado.some(
+    (x) => x.carta.tipo === 'primera' && (x.estado === 'abierta' || x.estado === 'a-medias'),
+  )
 
   return (
     <main className="pantalla">
@@ -241,34 +312,55 @@ export default function Home() {
         <h1>Ábreme cuando…</h1>
         <p className="cabecera__intro">Un buzón privado para los momentos importantes.</p>
         {modoRevision && <p className="modo-revision">Modo revisión · nada de lo que hagas aquí se guardará</p>}
-        <dl className="resumen" aria-label="Resumen de cartas">
-          <div>
-            <dt>Para abrir</dt>
-            <dd>{paraAbrir.length}</dd>
-          </div>
-          <div>
-            <dt>Abiertas</dt>
-            <dd>{abiertas.length}</dd>
-          </div>
-          <div>
-            <dt>Después</dt>
-            <dd>{futuras.length}</dd>
-          </div>
-        </dl>
+        {modoEnsayo && (
+          <p className="modo-revision">
+            Ensayo · lo ves como el primer día y nada se guarda ·{' '}
+            <a href={import.meta.env.BASE_URL}>salir</a>
+          </p>
+        )}
+        {selladas.length === 0 && (
+          <dl className="resumen" aria-label="Resumen de cartas">
+            <div>
+              <dt>Para abrir</dt>
+              <dd>{paraAbrir.length}</dd>
+            </div>
+            <div>
+              <dt>Abiertas</dt>
+              <dd>{abiertas.length}</dd>
+            </div>
+            <div>
+              <dt>Después</dt>
+              <dd>{futuras.length}</dd>
+            </div>
+          </dl>
+        )}
       </header>
+
+      {introAMedias && <AvisoIntro />}
+
+      {selladas.length === 0 && (
+        <AccesoRuleta
+          cuenta={contar(progreso, cartas)}
+          sinAbrir={misteriosGanados(progreso).filter((t) => !progreso.opened[t.cartaId]).length}
+        />
+      )}
 
       {paraAbrir.length > 0 ? (
         <SeccionCartas
-          titulo="Para abrir"
-          descripcion="Lo que está esperando ahora."
+          titulo={selladas.length > 0 ? 'Empieza por aquí' : 'Para abrir'}
+          descripcion={
+            selladas.length > 0 ? 'Solo esta. Las demás vienen después.' : 'Lo que está esperando ahora.'
+          }
           items={paraAbrir}
           progreso={progreso}
         />
       ) : (
-        <section className="estado-listo">
-          <h2>Todo leído por ahora</h2>
-          <p>Cuando haya otra carta esperando, aparecerá aquí arriba.</p>
-        </section>
+        selladas.length === 0 && (
+          <section className="estado-listo">
+            <h2>Todo leído por ahora</h2>
+            <p>Cuando haya otra carta esperando, aparecerá aquí arriba.</p>
+          </section>
+        )
       )}
 
       {abiertas.length > 0 && (
@@ -280,6 +372,8 @@ export default function Home() {
         />
       )}
 
+      {selladas.length > 0 && <MazoSellado cuantas={selladas.length} empezada={introAMedias} />}
+
       {futuras.length > 0 && (
         <SeccionCartas
           titulo="Más adelante"
@@ -289,7 +383,9 @@ export default function Home() {
         />
       )}
 
-      <p className="fantasma">Y las que faltan. Esto no se ha acabado.</p>
+      {selladas.length === 0 && (
+        <p className="fantasma">Y las que faltan. Esto no se ha acabado.</p>
+      )}
 
       <footer className="pie">
         <FirmaDelGrupo />

@@ -6,14 +6,28 @@ import {
   cargarProgreso,
   guardarPrueba,
   guardarSorteo,
+  guardarTirada,
   leerLocal,
   marcarAbierta,
+  marcarDia,
   marcarPlanHecho,
   marcarTutorial,
+  modoEfimero,
 } from './progress'
 import { planesDisponibles } from './estado'
+import { ECONOMIA, casillas, casillasVivas, contar } from './economia'
 import { SessionContext, type SessionState } from './session-context'
-import { PROGRESO_VACIO, type Bundle, type Carta, type Plan, type Progreso } from './tipos'
+import { PROGRESO_VACIO, type Bundle, type Carta, type Plan, type Progreso, type Tirada } from './tipos'
+
+/**
+ * `?ensayo` en la dirección: la web se ve como el primer día (progreso vacío) y
+ * nada de lo que se toque sale de la memoria. Se lee antes de montar nada para
+ * que ni la primera lectura del progreso llegue a mirar el registro de verdad.
+ */
+const ENSAYO =
+  typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('ensayo')
+
+if (ENSAYO) modoEfimero(true)
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [bundle, setBundle] = useState<Bundle | null>(null)
@@ -49,6 +63,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       fijar(leerLocal(b.progressId))
       setStatus('abierto')
       fijar(await cargarProgreso(b.progressId))
+      // El día se apunta con el progreso ya fusionado: si no, una racha vieja
+      // que solo estuviera en la nube se rompería al volver de otro móvil.
+      fijar(marcarDia(b.progressId, ref.current))
       setProgresoCargado(true)
     },
     [fijar],
@@ -157,6 +174,25 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [id, fijar, modoRevision],
   )
 
+  /**
+   * Una tirada: cobra los créditos, elige entre las casillas que todavía tienen
+   * carta y devuelve la que ha salido. null si no llega o si no queda ninguna.
+   */
+  const girarRuleta = useCallback((): Tirada | null => {
+    // En revisión se puede girar sin pagar: es para ver cómo queda, y no se apunta.
+    if (!modoRevision && contar(ref.current, cartas).saldo < ECONOMIA.tirada) return null
+    const libres = casillasVivas(casillas(cartas, ref.current))
+    if (!libres.length) return null
+    const elegida = libres[Math.floor(Math.random() * libres.length)]
+    const tirada: Tirada = {
+      at: new Date().toISOString(),
+      casilla: elegida.n,
+      cartaId: elegida.cartaId!,
+    }
+    if (!modoRevision) fijar(guardarTirada(id, ref.current, tirada))
+    return tirada
+  }, [cartas, id, fijar, modoRevision])
+
   const tutorialVisto = useCallback(() => {
     if (!modoRevision) fijar(marcarTutorial(id, ref.current))
   }, [id, fijar, modoRevision])
@@ -173,17 +209,20 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       clave,
       fallos,
       modoRevision,
+      modoEnsayo: ENSAYO,
       unlock,
       lock,
       abrir,
       aportarPrueba,
       girarBombo,
+      girarRuleta,
       planHecho,
       tutorialVisto,
     }),
     [
       status, progresoCargado, error, cartas, bundle, progreso, id, clave, fallos,
-      unlock, lock, abrir, aportarPrueba, girarBombo, planHecho, tutorialVisto, modoRevision,
+      unlock, lock, abrir, aportarPrueba, girarBombo, girarRuleta, planHecho, tutorialVisto,
+      modoRevision,
     ],
   )
 
