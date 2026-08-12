@@ -536,6 +536,17 @@ button:disabled {
   line-height: 1.45;
 }
 
+.modo-revision {
+  display: inline-block;
+  margin: 0.4rem 0 0;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid rgba(157, 56, 50, 0.32);
+  color: var(--lacre-oscuro);
+  background: rgba(157, 56, 50, 0.1);
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+}
+
 .resumen {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

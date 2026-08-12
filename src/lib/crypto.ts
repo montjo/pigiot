@@ -1,4 +1,4 @@
-import type { Bundle, Carta } from './tipos'
+import type { Bundle, Carta, CifradoCartas } from './tipos'
 
 function fromBase64(value: string): Uint8Array<ArrayBuffer> {
   const binary = atob(value)
@@ -13,7 +13,7 @@ export async function sha256Hex(value: string): Promise<string> {
 }
 
 /** La clave se guarda para poder cifrar y descifrar también las fotos del álbum. */
-export async function derivarClave(password: string, bundle: Bundle): Promise<CryptoKey> {
+export async function derivarClave(password: string, bundle: Pick<CifradoCartas, 'kdf'>): Promise<CryptoKey> {
   const base = await crypto.subtle.importKey(
     'raw',
     new TextEncoder().encode(password),
@@ -40,7 +40,7 @@ export async function derivarClave(password: string, bundle: Bundle): Promise<Cr
  * falta guardar ningún hash: AES-GCM lleva su propia comprobación, así que
  * descifrar solo funciona con la contraseña correcta.
  */
-export async function descifrarCartas(clave: CryptoKey, bundle: Bundle): Promise<Carta[] | null> {
+export async function descifrarCartas(clave: CryptoKey, bundle: CifradoCartas): Promise<Carta[] | null> {
   try {
     const plano = await crypto.subtle.decrypt(
       { name: 'AES-GCM', iv: fromBase64(bundle.iv) },

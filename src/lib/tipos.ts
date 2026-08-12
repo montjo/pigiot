@@ -78,14 +78,19 @@ export function pruebaVaDespues(carta: Carta): boolean {
 
 // --- Lo que viaja cifrado ---------------------------------------------------
 
-export type Bundle = {
+export type CifradoCartas = {
+  kdf: { name: 'PBKDF2'; hash: 'SHA-256'; iterations: number; salt: string }
+  iv: string
+  ct: string
+}
+
+export type Bundle = CifradoCartas & {
   v: number
   progressId: string
   /** Pista de la contraseña, EN CLARO a propósito: es la única red de seguridad. */
   pista?: string
-  kdf: { name: 'PBKDF2'; hash: 'SHA-256'; iterations: number; salt: string }
-  iv: string
-  ct: string
+  /** Segundo cifrado para enseñar la web sin tocar el progreso real. */
+  revision?: CifradoCartas
 }
 
 // --- Progreso (documento único de Firestore) --------------------------------

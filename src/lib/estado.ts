@@ -10,7 +10,8 @@ function yaLlego(carta: Carta, ahora: Date): boolean {
  * Una carta que ya está abierta lo está para siempre: si más adelante se le
  * añade una fecha o una prueba, no puede volverse inaccesible.
  */
-export function estadoDeCarta(carta: Carta, progreso: Progreso, ahora = new Date()): EstadoCarta {
+export function estadoDeCarta(carta: Carta, progreso: Progreso, ahora = new Date(), revision = false): EstadoCarta {
+  if (revision) return 'cerrada'
   const abierta = Boolean(progreso.opened[carta.id])
   const conPrueba = Boolean(progreso.pruebas[carta.id])
 
@@ -23,7 +24,8 @@ export function estadoDeCarta(carta: Carta, progreso: Progreso, ahora = new Date
 }
 
 /** Las ocultas no aparecen hasta que llega su fecha. Las abiertas siempre aparecen. */
-export function cartasVisibles(cartas: Carta[], progreso: Progreso, ahora = new Date()): Carta[] {
+export function cartasVisibles(cartas: Carta[], progreso: Progreso, ahora = new Date(), revision = false): Carta[] {
+  if (revision) return cartas
   return cartas.filter(
     (c) => Boolean(progreso.opened[c.id]) || !c.oculta || yaLlego(c, ahora),
   )

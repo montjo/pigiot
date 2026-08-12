@@ -221,6 +221,39 @@ async function contrasena() {
   return v
 }
 
+async function contrasenaRevision() {
+  if (process.env.LETTERS_ADMIN_PASSWORD) return process.env.LETTERS_ADMIN_PASSWORD
+  const rl = createInterface({ input: stdin, output: stdout })
+  const v = await rl.question('Contraseña del modo revisión: ')
+  rl.close()
+  return v
+}
+
+async function cifrar(cartas, clave) {
+  const salt = crypto.getRandomValues(new Uint8Array(16))
+  const iv = crypto.getRandomValues(new Uint8Array(12))
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(clave), 'PBKDF2', false, [
+    'deriveKey',
+  ])
+  const key = await crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt, iterations: ITERACIONES, hash: 'SHA-256' },
+    base,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt'],
+  )
+  const ct = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv },
+    key,
+    new TextEncoder().encode(JSON.stringify(cartas)),
+  )
+  return {
+    kdf: { name: 'PBKDF2', hash: 'SHA-256', iterations: ITERACIONES, salt: Buffer.from(salt).toString('base64') },
+    iv: Buffer.from(iv).toString('base64'),
+    ct: Buffer.from(new Uint8Array(ct)).toString('base64'),
+  }
+}
+
 /** Se conserva SIEMPRE: si cambia, se pierde el progreso y hay que rehacer las reglas. */
 async function progressIdEstable() {
   try {
@@ -258,6 +291,9 @@ await avisarIdsPerdidos(cartas)
 
 const clave = (await contrasena()).trim()
 if (clave.length < 6) morir('Usa una contraseña de al menos 6 caracteres.')
+const claveRevision = (await contrasenaRevision()).trim()
+if (claveRevision.length < 6) morir('La contraseña de revisión debe tener al menos 6 caracteres.')
+if (claveRevision === clave) morir('La contraseña de revisión tiene que ser distinta de la contraseña principal.')
 
 let pista
 try {
@@ -266,31 +302,12 @@ try {
   // Opcional.
 }
 
-const salt = crypto.getRandomValues(new Uint8Array(16))
-const iv = crypto.getRandomValues(new Uint8Array(12))
-const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(clave), 'PBKDF2', false, [
-  'deriveKey',
-])
-const key = await crypto.subtle.deriveKey(
-  { name: 'PBKDF2', salt, iterations: ITERACIONES, hash: 'SHA-256' },
-  base,
-  { name: 'AES-GCM', length: 256 },
-  false,
-  ['encrypt'],
-)
-const ct = await crypto.subtle.encrypt(
-  { name: 'AES-GCM', iv },
-  key,
-  new TextEncoder().encode(JSON.stringify(cartas)),
-)
-
 const bundle = {
   v: 2,
   progressId: await progressIdEstable(),
   pista,
-  kdf: { name: 'PBKDF2', hash: 'SHA-256', iterations: ITERACIONES, salt: Buffer.from(salt).toString('base64') },
-  iv: Buffer.from(iv).toString('base64'),
-  ct: Buffer.from(new Uint8Array(ct)).toString('base64'),
+  ...(await cifrar(cartas, clave)),
+  revision: await cifrar(cartas, claveRevision),
 }
 
 const json = JSON.stringify(bundle)

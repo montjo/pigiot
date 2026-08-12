@@ -203,7 +203,7 @@ function SeccionCartas({
 }
 
 export default function Home() {
-  const { status, error, cartas, progreso, lock } = useSession()
+  const { status, error, cartas, progreso, lock, modoRevision } = useSession()
 
   if (status === 'cargando') return <main className="pantalla pantalla--centro">…</main>
   if (status === 'error')
@@ -214,8 +214,8 @@ export default function Home() {
     )
   if (status === 'bloqueado') return <Puerta />
 
-  const visibles = cartasVisibles(cartas, progreso)
-  const conEstado = visibles.map((c) => ({ carta: c, estado: estadoDeCarta(c, progreso) }))
+  const visibles = cartasVisibles(cartas, progreso, new Date(), modoRevision)
+  const conEstado = visibles.map((c) => ({ carta: c, estado: estadoDeCarta(c, progreso, new Date(), modoRevision) }))
   const paraAbrir = conEstado.filter(
     (x) => x.estado === 'cerrada' || x.estado === 'pide-prueba' || x.estado === 'a-medias',
   )
@@ -240,6 +240,7 @@ export default function Home() {
         </div>
         <h1>Ábreme cuando…</h1>
         <p className="cabecera__intro">Un buzón privado para los momentos importantes.</p>
+        {modoRevision && <p className="modo-revision">Modo revisión · nada de lo que hagas aquí se guardará</p>}
         <dl className="resumen" aria-label="Resumen de cartas">
           <div>
             <dt>Para abrir</dt>

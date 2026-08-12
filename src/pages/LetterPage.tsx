@@ -113,15 +113,17 @@ function PanelPrueba({ carta, alAportar }: { carta: Carta; alAportar: (linea?: s
 }
 
 function Bombo({ carta }: { carta: Carta }) {
-  const { progreso, girarBombo, planHecho } = useSession()
+  const { progreso, girarBombo, planHecho, modoRevision } = useSession()
   const [girando, setGirando] = useState(false)
-  const pendiente = planPendiente(carta, progreso)
+  const [planVista, setPlanVista] = useState<Plan | null>(null)
+  const pendiente = planVista ?? planPendiente(carta, progreso)
   const quedan = planesDisponibles(carta, progreso).length
 
   function girar() {
     setGirando(true)
     setTimeout(() => setGirando(false), 900)
-    girarBombo(carta.id)
+    const elegido = girarBombo(carta.id)
+    if (modoRevision) setPlanVista(elegido)
   }
 
   if (pendiente) return <PlanTocado carta={carta} plan={pendiente} alHacerlo={() => planHecho(carta.id, pendiente.id)} />
@@ -196,13 +198,15 @@ function Voces({ carta }: { carta: Carta }) {
 
 export default function LetterPage() {
   const { id } = useParams()
-  const { status, cartas, progreso, abrir, aportarPrueba } = useSession()
+  const { status, cartas, progreso, abrir, aportarPrueba, modoRevision } = useSession()
   const [armada, setArmada] = useState(false)
   const [abriendo, setAbriendo] = useState(false)
+  const [vistaPreviaAbierta, setVistaPreviaAbierta] = useState(false)
   const vinoDePrueba = useRef(false)
 
   const carta = cartas.find((c) => c.id === id)
-  const estado = carta ? estadoDeCarta(carta, progreso) : null
+  const estadoBase = carta ? estadoDeCarta(carta, progreso, new Date(), modoRevision) : null
+  const estado = modoRevision && vistaPreviaAbierta ? 'abierta' : estadoBase
 
   useEffect(() => {
     if (estado !== 'cerrada') return
@@ -255,6 +259,10 @@ export default function LetterPage() {
             className="sobre__boton"
             onClick={() => {
               setAbriendo(true)
+              if (modoRevision) {
+                setVistaPreviaAbierta(true)
+                setAbriendo(false)
+              }
               abrir(carta.id)
             }}
           >

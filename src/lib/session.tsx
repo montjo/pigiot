@@ -24,6 +24,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<SessionState['status']>('cargando')
   const [fallos, setFallos] = useState(0)
   const [error, setError] = useState<string>()
+  const [modoRevision, setModoRevision] = useState(false)
 
   /** El progreso vive también aquí para no leerlo de localStorage en cada acción. */
   const ref = useRef(progreso)
@@ -33,9 +34,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const entrar = useCallback(
-    async (b: Bundle, abiertas: Carta[], k: CryptoKey) => {
+    async (b: Bundle, abiertas: Carta[], k: CryptoKey, revision = false) => {
       setCartas(abiertas)
       setClave(k)
+      setModoRevision(revision)
+      if (revision) {
+        fijar(PROGRESO_VACIO)
+        setStatus('abierto')
+        setProgresoCargado(true)
+        return
+      }
       // Se pinta lo local ANTES de abrir, para que nadie vea la lista en blanco
       // ni se tome ninguna decisión con el progreso a medias.
       fijar(leerLocal(b.progressId))
@@ -54,9 +62,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         if (cancelado) return
         setBundle(b)
         const guardada = await recuperarClave()
-        const abiertas = guardada ? await descifrarCartas(guardada, b) : null
+        let revision = false
+        let abiertas = guardada ? await descifrarCartas(guardada, b) : null
+        if (!abiertas && guardada && b.revision) {
+          abiertas = await descifrarCartas(guardada, b.revision)
+          revision = Boolean(abiertas)
+        }
         if (cancelado) return
-        if (abiertas && guardada) await entrar(b, abiertas, guardada)
+        if (abiertas && guardada) await entrar(b, abiertas, guardada, revision)
         else {
           await olvidarClave()
           setStatus('bloqueado')
@@ -77,13 +90,23 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     async (password: string) => {
       if (!bundle) return false
       const k = await derivarClave(password.trim(), bundle)
-      const abiertas = await descifrarCartas(k, bundle)
+      let revision = false
+      let abiertas = await descifrarCartas(k, bundle)
+      if (!abiertas && bundle.revision) {
+        const kr = await derivarClave(password.trim(), bundle.revision)
+        const cartasRevision = await descifrarCartas(kr, bundle.revision)
+        if (cartasRevision) {
+          await guardarClave(kr)
+          await entrar(bundle, cartasRevision, kr, true)
+          return true
+        }
+      }
       if (!abiertas) {
         setFallos((n) => n + 1)
         return false
       }
       await guardarClave(k)
-      await entrar(bundle, abiertas, k)
+      await entrar(bundle, abiertas, k, revision)
       return true
     },
     [bundle, entrar],
@@ -93,6 +116,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     void olvidarClave()
     setCartas([])
     setClave(null)
+    setModoRevision(false)
     setFallos(0)
     setStatus('bloqueado')
   }, [])
@@ -100,14 +124,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const id = bundle?.progressId ?? ''
 
   const abrir = useCallback(
-    (cartaId: string) => fijar(marcarAbierta(id, ref.current, cartaId)),
-    [id, fijar],
+    (cartaId: string) => {
+      if (!modoRevision) fijar(marcarAbierta(id, ref.current, cartaId))
+    },
+    [id, fijar, modoRevision],
   )
 
   const aportarPrueba = useCallback(
-    (cartaId: string, datos: { fotoId?: string; linea?: string }) =>
-      fijar(guardarPrueba(id, ref.current, cartaId, datos)),
-    [id, fijar],
+    (cartaId: string, datos: { fotoId?: string; linea?: string }) => {
+      if (!modoRevision) fijar(guardarPrueba(id, ref.current, cartaId, datos))
+    },
+    [id, fijar, modoRevision],
   )
 
   const girarBombo = useCallback(
@@ -117,18 +144,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       const quedan = planesDisponibles(carta, ref.current)
       if (!quedan.length) return null
       const elegido = quedan[Math.floor(Math.random() * quedan.length)]
-      fijar(guardarSorteo(id, ref.current, cartaId, elegido.id))
+      if (!modoRevision) fijar(guardarSorteo(id, ref.current, cartaId, elegido.id))
       return elegido
     },
-    [cartas, id, fijar],
+    [cartas, id, fijar, modoRevision],
   )
 
   const planHecho = useCallback(
-    (cartaId: string, planId: string) => fijar(marcarPlanHecho(id, ref.current, cartaId, planId)),
-    [id, fijar],
+    (cartaId: string, planId: string) => {
+      if (!modoRevision) fijar(marcarPlanHecho(id, ref.current, cartaId, planId))
+    },
+    [id, fijar, modoRevision],
   )
 
-  const tutorialVisto = useCallback(() => fijar(marcarTutorial(id, ref.current)), [id, fijar])
+  const tutorialVisto = useCallback(() => {
+    if (!modoRevision) fijar(marcarTutorial(id, ref.current))
+  }, [id, fijar, modoRevision])
 
   const value = useMemo<SessionState>(
     () => ({
@@ -141,6 +172,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       progressId: id,
       clave,
       fallos,
+      modoRevision,
       unlock,
       lock,
       abrir,
@@ -151,7 +183,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }),
     [
       status, progresoCargado, error, cartas, bundle, progreso, id, clave, fallos,
-      unlock, lock, abrir, aportarPrueba, girarBombo, planHecho, tutorialVisto,
+      unlock, lock, abrir, aportarPrueba, girarBombo, planHecho, tutorialVisto, modoRevision,
     ],
   )
 

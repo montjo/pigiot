@@ -13,6 +13,7 @@ export type SessionState = {
   clave: CryptoKey | null
   /** Cuántas veces ha fallado la contraseña en esta pantalla. */
   fallos: number
+  modoRevision: boolean
   unlock: (password: string) => Promise<boolean>
   lock: () => void
   abrir: (cartaId: string) => void
