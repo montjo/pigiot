@@ -24,8 +24,14 @@ dist-ssr
 *.sw?
 
 # --- Este proyecto ---
-# Las cartas EN CLARO nunca se suben. Solo se sube public/letters.enc.json (cifrado).
+# El contenido EN CLARO nunca se sube: el repo es público y solo debe viajar
+# public/letters.enc.json, que va cifrado.
 content/letters.json
+content/cartas/
+content/voces/
+content/fotos/
+content/bombo/
+content/.ids-anteriores.json
 # Config de Firebase y contraseñas locales
 .env
 .env.local

@@ -2,6 +2,7 @@ import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { SessionProvider } from './lib/session'
 import Home from './pages/Home'
 import LetterPage from './pages/LetterPage'
+import ComoVa from './pages/ComoVa'
 import Admin from './pages/Admin'
 
 export default function App() {
@@ -11,6 +12,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/carta/:id" element={<LetterPage />} />
+          <Route path="/como-va" element={<ComoVa />} />
           <Route path="/progreso" element={<Admin />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

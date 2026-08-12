@@ -1,20 +1,4 @@
-export type Letter = {
-  id: string
-  title: string
-  body: string
-  emoji?: string
-  hint?: string
-  /** AAAA-MM-DD: la carta no se muestra antes de esa fecha. */
-  unlockAt?: string
-}
-
-export type LetterBundle = {
-  v: number
-  progressId: string
-  kdf: { name: 'PBKDF2'; hash: 'SHA-256'; iterations: number; salt: string }
-  iv: string
-  ct: string
-}
+import type { Bundle, Carta } from './tipos'
 
 function fromBase64(value: string): Uint8Array<ArrayBuffer> {
   const binary = atob(value)
@@ -28,50 +12,49 @@ export async function sha256Hex(value: string): Promise<string> {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
-/**
- * Devuelve las cartas si la contraseña es correcta, o null si no lo es.
- * No hace falta guardar ningún hash de la contraseña de él: AES-GCM lleva su
- * propia comprobación de integridad, así que descifrar solo funciona con la
- * contraseña buena.
- */
-export async function decryptLetters(
-  password: string,
-  bundle: LetterBundle,
-): Promise<Letter[] | null> {
-  const baseKey = await crypto.subtle.importKey(
+/** La clave se guarda para poder cifrar y descifrar también las fotos del álbum. */
+export async function derivarClave(password: string, bundle: Bundle): Promise<CryptoKey> {
+  const base = await crypto.subtle.importKey(
     'raw',
     new TextEncoder().encode(password),
     'PBKDF2',
     false,
     ['deriveKey'],
   )
-  const key = await crypto.subtle.deriveKey(
+  return crypto.subtle.deriveKey(
     {
       name: 'PBKDF2',
       salt: fromBase64(bundle.kdf.salt),
       iterations: bundle.kdf.iterations,
       hash: bundle.kdf.hash,
     },
-    baseKey,
+    base,
     { name: 'AES-GCM', length: 256 },
     false,
-    ['decrypt'],
+    ['encrypt', 'decrypt'],
   )
+}
 
+/**
+ * Devuelve las cartas si la clave es la buena, o null si no lo es. No hace
+ * falta guardar ningún hash: AES-GCM lleva su propia comprobación, así que
+ * descifrar solo funciona con la contraseña correcta.
+ */
+export async function descifrarCartas(clave: CryptoKey, bundle: Bundle): Promise<Carta[] | null> {
   try {
-    const plaintext = await crypto.subtle.decrypt(
+    const plano = await crypto.subtle.decrypt(
       { name: 'AES-GCM', iv: fromBase64(bundle.iv) },
-      key,
+      clave,
       fromBase64(bundle.ct),
     )
-    return JSON.parse(new TextDecoder().decode(plaintext)) as Letter[]
+    return JSON.parse(new TextDecoder().decode(plano)) as Carta[]
   } catch {
     return null
   }
 }
 
-export async function loadBundle(): Promise<LetterBundle> {
-  const response = await fetch(`${import.meta.env.BASE_URL}letters.enc.json`, { cache: 'no-cache' })
-  if (!response.ok) throw new Error(`No se pudo cargar letters.enc.json (${response.status})`)
-  return (await response.json()) as LetterBundle
+export async function cargarBundle(): Promise<Bundle> {
+  const res = await fetch(`${import.meta.env.BASE_URL}letters.enc.json`, { cache: 'no-cache' })
+  if (!res.ok) throw new Error(`No se pudo cargar el fichero de cartas (${res.status})`)
+  return (await res.json()) as Bundle
 }

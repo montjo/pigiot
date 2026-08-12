@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "letters": "node scripts/encrypt-letters.mjs",
+    "letters": "node scripts/cartas.mjs",
     "hash": "node scripts/hash-password.mjs",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
