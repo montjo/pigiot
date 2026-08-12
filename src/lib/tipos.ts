@@ -1,0 +1,147 @@
+/**
+ * Contratos compartidos de toda la app. Si algo se usa en más de un módulo,
+ * su tipo vive aquí y no se redefine en ningún otro sitio.
+ */
+
+export const TIPOS_CARTA = ['primera', 'normal', 'misterio', 'reto', 'aparte'] as const
+export type TipoCarta = (typeof TIPOS_CARTA)[number]
+
+/** Nombre visible de cada tipo, tal cual se pinta en la interfaz. */
+export const NOMBRE_TIPO: Record<TipoCarta, string> = {
+  primera: 'La primera',
+  normal: 'Normal',
+  misterio: 'Misterio',
+  reto: 'Reto',
+  aparte: 'Punto y aparte',
+}
+
+/** Lo que hay que aportar para abrir una carta. */
+export type Prueba = {
+  /** Qué tiene que hacer, en su idioma: «Una foto tuya con nosotros, de ahora mismo». */
+  texto: string
+  /** Si existe, además de la foto se le pide escribir una línea. */
+  pregunta?: string
+  /** true en las pruebas que piden una foto del momento (abre la cámara). */
+  camara?: boolean
+}
+
+/** Un escrito firmado por una persona del grupo. */
+export type Voz = {
+  de: string
+  cuerpo: string[]
+}
+
+/** Un plan del bombo de las cartas de misterio. */
+export type Plan = {
+  id: string
+  /** El plan en sí: «Ver el amanecer». */
+  plan: string
+  /** Quién lo propone y con quién se hace. */
+  con: string[]
+  /** Detalle opcional que se lee debajo. */
+  detalle?: string
+}
+
+/** Foto incrustada dentro de una carta. Va cifrada dentro del bundle. */
+export type FotoCarta = {
+  /** data: URI ya incrustada por scripts/cartas.mjs */
+  src: string
+  pie?: string
+}
+
+export type Carta = {
+  id: string
+  tipo: TipoCarta
+  /** «Ábreme cuando…» */
+  titulo: string
+  /** Subtítulo que se lee en la lista sin abrir la carta. */
+  pista?: string
+  /** Cuándo se escribió: «marzo de 2026». Se pinta como matasellos. */
+  escritaEl?: string
+  /** AAAA-MM-DD. Antes de esa fecha la carta no se puede abrir. */
+  desde?: string
+  /** Si es true, la carta ni aparece en la lista hasta que se puede abrir. */
+  oculta?: boolean
+  prueba?: Prueba
+  cuerpo?: string[]
+  fotos?: FotoCarta[]
+  voces?: Voz[]
+  bombo?: Plan[]
+}
+
+/** En las de reto la prueba se aporta DESPUÉS de abrirla; en el resto, antes. */
+export function pruebaVaDespues(carta: Carta): boolean {
+  return carta.tipo === 'reto'
+}
+
+// --- Lo que viaja cifrado ---------------------------------------------------
+
+export type Bundle = {
+  v: number
+  progressId: string
+  /** Pista de la contraseña, EN CLARO a propósito: es la única red de seguridad. */
+  pista?: string
+  kdf: { name: 'PBKDF2'; hash: 'SHA-256'; iterations: number; salt: string }
+  iv: string
+  ct: string
+}
+
+// --- Progreso (documento único de Firestore) --------------------------------
+
+export type Apertura = { at: string; device: string }
+
+export type PruebaAportada = {
+  at: string
+  /** Id del documento de la colección `photos`, si se subió foto. */
+  fotoId?: string
+  /** La línea que escribió, cifrada. */
+  linea?: string
+}
+
+export type Sorteo = {
+  planId: string
+  at: string
+  /** Cuándo marcaron el plan como hecho. Mientras no exista, no se puede resortear. */
+  hechoAt?: string
+}
+
+export type Progreso = {
+  opened: Record<string, Apertura>
+  pruebas: Record<string, PruebaAportada>
+  /** Varios sorteos por carta: el bombo se puede volver a girar. */
+  sorteos: Record<string, Sorteo[]>
+  visits?: number
+  lastSeen?: string
+  tutorialAt?: string
+}
+
+export const PROGRESO_VACIO: Progreso = { opened: {}, pruebas: {}, sorteos: {} }
+
+// --- Estado derivado de una carta -------------------------------------------
+
+export type EstadoCarta =
+  /** Aún no ha llegado su fecha. */
+  | 'futura'
+  /** Hay que aportar la prueba antes de poder abrirla. */
+  | 'pide-prueba'
+  /** Se puede abrir ya. */
+  | 'cerrada'
+  /** Abierta, pero le falta aportar la prueba (solo retos). */
+  | 'a-medias'
+  | 'abierta'
+
+// --- Álbum ------------------------------------------------------------------
+
+export type FotoAlbum = {
+  id: string
+  /** ISO. En claro: no dice nada por sí solo. */
+  at: string
+  w: number
+  h: number
+  /** true solo en la foto de la carta `primera`: la que abre la historia. */
+  ancla?: boolean
+  /** Miniatura ya descifrada, lista para <img src>. */
+  url?: string
+  /** Metadatos descifrados. */
+  meta?: { de?: string; pie?: string }
+}
