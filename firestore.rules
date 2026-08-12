@@ -2,18 +2,60 @@ rules_version = '2';
 
 // Pega TODO este fichero en: Consola de Firebase > Firestore Database > Reglas.
 //
-// El id de abajo es el "progressId" de public/letters.enc.json: el único
-// documento que la app usa. Se conserva aunque vuelvas a ejecutar
-// `npm run letters`, así que estas reglas no hay que tocarlas nunca más.
+// El progreso es de SOLO AÑADIR: se pueden apuntar aperturas nuevas, pero no
+// vaciar el registro. Sin esto, cualquiera que lea el repo puede borrar de un
+// golpe el histórico entero de aperturas, que es irrecuperable.
 //
-// Con esto la base de datos solo acepta lecturas y escrituras sobre ESE
-// documento: nadie puede crear colecciones nuevas ni llenarte la cuota.
+// El álbum es de SOLO CREAR: una foto subida ya no se puede modificar ni
+// borrar desde la web. Para borrar una foto, hazlo desde esta misma consola.
+
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    function progresoValido() {
+      return request.resource.data.keys().hasOnly(
+        ['opened', 'pruebas', 'sorteos', 'visits', 'lastSeen', 'tutorialAt']);
+    }
+
+    // Solo añade: cada mapa debe conservar todas las claves que ya tenía.
+    function conserva(campo) {
+      return !(campo in resource.data)
+        || request.resource.data[campo].keys().hasAll(resource.data[campo].keys());
+    }
+
     match /progress/{docId} {
       allow read: if docId == '97a15a0962a02f2f18c81c62';
-      allow write: if docId == '97a15a0962a02f2f18c81c62'
-                   && request.resource.data.keys().hasOnly(['opened', 'visits', 'lastSeen']);
+      allow create: if docId == '97a15a0962a02f2f18c81c62' && progresoValido();
+      allow update: if docId == '97a15a0962a02f2f18c81c62'
+                    && progresoValido()
+                    && conserva('opened')
+                    && conserva('pruebas')
+                    && conserva('sorteos');
+    }
+
+    // Miniatura cifrada + metadatos. Se lee para pintar la retícula del álbum.
+    match /photos/{id} {
+      allow read: if true;
+      allow create: if
+           request.resource.data.keys().hasOnly(['at', 'w', 'h', 'ancla', 'iv', 'meta', 'miv', 'mini'])
+        && request.resource.data.keys().hasAll(['at', 'w', 'h', 'iv', 'meta', 'miv', 'mini'])
+        && request.resource.data.at is string && request.resource.data.at.size() < 40
+        && request.resource.data.w is int && request.resource.data.w > 0 && request.resource.data.w < 20000
+        && request.resource.data.h is int && request.resource.data.h > 0 && request.resource.data.h < 20000
+        && request.resource.data.iv is string && request.resource.data.iv.size() < 40
+        && request.resource.data.miv is string && request.resource.data.miv.size() < 40
+        && request.resource.data.meta is string && request.resource.data.meta.size() < 3000
+        && request.resource.data.mini is bytes && request.resource.data.mini.size() < 150000;
+    }
+
+    // Imagen grande cifrada. Solo se lee al abrir una foto a pantalla completa.
+    match /photosFull/{id} {
+      allow read: if true;
+      allow create: if
+           request.resource.data.keys().hasOnly(['iv', 'b'])
+        && request.resource.data.keys().hasAll(['iv', 'b'])
+        && request.resource.data.iv is string && request.resource.data.iv.size() < 40
+        && request.resource.data.b is bytes && request.resource.data.b.size() < 800000;
     }
   }
 }
