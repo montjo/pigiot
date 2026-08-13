@@ -1674,8 +1674,19 @@ ul.diario {
 .rueda__hueco--negro { fill: #16161e; }
 .rueda__hueco--verde { fill: #1f7a5c; }
 
+/* Ya salió: se apaga la casilla y se le tacha el número. No vuelve a tocar. */
 .rueda__hueco.es-usada {
-  opacity: 0.34;
+  opacity: 0.22;
+}
+
+.rueda__n.es-usada {
+  fill: rgba(255, 247, 232, 0.34);
+}
+
+.rueda__tachon {
+  stroke: rgba(255, 247, 232, 0.55);
+  stroke-width: 1.4;
+  stroke-linecap: round;
 }
 
 .rueda__n {
@@ -1715,6 +1726,12 @@ ul.diario {
 
 .ruleta__vivas {
   font-size: 0.82rem;
+}
+
+.ruleta__gastadas {
+  margin: -0.4rem 0 1rem;
+  font-size: 0.82rem;
+  text-align: center;
 }
 
 .premio {

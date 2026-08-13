@@ -393,8 +393,8 @@ export default function LetterPage() {
   if (!carta || estado === 'futura' || estado === 'sellada') return <Navigate to="/" replace />
 
   const volver = (
-    <Link to={carta.tipo === 'misterio' ? '/ruleta' : '/'} className="volver">
-      {carta.tipo === 'misterio' ? '← La ruleta' : '← Todas las cartas'}
+    <Link to="/" className="volver">
+      ← Todas las cartas
     </Link>
   )
 

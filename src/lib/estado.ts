@@ -44,11 +44,11 @@ export function cartasVisibles(cartas: Carta[], progreso: Progreso, ahora = new 
 }
 
 /**
- * El mazo: todo menos las de misterio, que viven en la ruleta y no se mezclan
- * con la lista de las que espera abrir algún día.
+ * El mazo. Las de misterio no salen mientras no le hayan tocado —esas viven en
+ * la ruleta—, pero en cuanto salen en un giro entran en la lista como una más.
  */
-export function cartasDelMazo(cartas: Carta[]): Carta[] {
-  return cartas.filter((c) => c.tipo !== 'misterio')
+export function cartasDelMazo(cartas: Carta[], progreso: Progreso): Carta[] {
+  return cartas.filter((c) => c.tipo !== 'misterio' || haSalido(progreso, c.id))
 }
 
 /** El plan que le tocó y todavía no han hecho, si lo hay. */

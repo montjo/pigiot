@@ -138,7 +138,7 @@ export default function Intro() {
   const [n, setN] = useState(0)
   const [voz, setVoz] = useState(false)
 
-  const lista = pasos(cartasVisibles(cartasDelMazo(cartas), progreso).length)
+  const lista = pasos(cartasVisibles(cartasDelMazo(cartas, progreso), progreso).length)
   const total = lista.length
   const paso = lista[n]
   const ultimo = n === total - 1

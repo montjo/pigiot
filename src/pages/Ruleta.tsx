@@ -10,6 +10,7 @@ import {
   contar,
   misteriosGanados,
   movimientos,
+  opcionesDeVerde,
   type Casilla,
   type Cuenta,
   type Movimiento,
@@ -52,15 +53,13 @@ function Rueda({ lista, giro, girando }: { lista: Casilla[]; giro: number; giran
             />
           ))}
           {lista.map((c, i) => (
-            <text
-              key={c.n}
-              x="100"
-              y="26"
-              className="rueda__n"
-              transform={`rotate(${i * ancho} 100 100)`}
-            >
-              {c.n}
-            </text>
+            <g key={c.n} transform={`rotate(${i * ancho} 100 100)`}>
+              <text x="100" y="26" className={`rueda__n${c.usada ? ' es-usada' : ''}`}>
+                {c.n}
+              </text>
+              {/* Las que ya salieron llevan su tachón: no pueden repetirse. */}
+              {c.usada && <line x1="92" y1="22" x2="108" y2="22" className="rueda__tachon" />}
+            </g>
           ))}
           <circle cx="100" cy="100" r="34" className="rueda__centro" />
         </g>
@@ -156,16 +155,16 @@ function Historial({ movimientos, cuenta }: { movimientos: Movimiento[]; cuenta:
             </span>
           </li>
           <li>
-            <span>Abrir una carta del mazo</span>
+            <span>Obtener una carta del mazo</span>
             <span>{ECONOMIA.carta}</span>
           </li>
           <li>
-            <span>Cumplir lo que pide una carta</span>
+            <span>Obtener una carta que pide prueba</span>
             <span>{ECONOMIA.prueba}</span>
           </li>
           <li>
-            <span>Hacer un plan del bombo</span>
-            <span>{ECONOMIA.plan}</span>
+            <span>Obtener una carta de misterio ganada en la ruleta</span>
+            <span>{ECONOMIA.misterio}</span>
           </li>
           <li>
             <span>Cada tirada de la ruleta</span>
@@ -193,8 +192,9 @@ export default function Ruleta() {
   const historial = movimientos(progreso, cartas)
   const cuenta = contar(progreso, cartas, historial)
   const vivas = casillasVivas(lista)
+  const verdes = Math.round(opcionesDeVerde(vivas) * 100)
+  const gastadas = lista.filter((c) => c.usada).length
   const ganados = misteriosGanados(progreso)
-  const sinAbrir = ganados.filter((t) => !progreso.opened[t.cartaId])
   const puede = (modoRevision || cuenta.saldo >= ECONOMIA.tirada) && vivas.length > 0 && !girando
 
   function girar() {
@@ -235,6 +235,12 @@ export default function Ruleta() {
 
       <Rueda lista={lista} giro={giro} girando={girando} />
 
+      {gastadas > 0 && (
+        <p className="apagado ruleta__gastadas">
+          Las {gastadas === 1 ? 'casilla tachada ya salió' : `${gastadas} casillas tachadas ya salieron`}: no pueden repetirse.
+        </p>
+      )}
+
       <div className="ruleta__mando">
         {vivas.length === 0 ? (
           <p className="apagado">
@@ -253,6 +259,7 @@ export default function Ruleta() {
               {vivas.length === 1
                 ? '1 casilla tiene carta ahora mismo. No sabes cuál.'
                 : `${vivas.length} casillas tienen carta ahora mismo. No sabes cuáles.`}
+              {verdes > 0 && ` Las verdes salen menos: hoy, ${verdes} de cada 100 tiradas.`}
             </p>
           </>
         )}
@@ -262,24 +269,35 @@ export default function Ruleta() {
       {premio && <Premio tirada={premio} casilla={lista.find((c) => c.n === premio.casilla)} />}
 
       {/* Mientras gira no se enseña: sería contarle el final antes de tiempo. */}
-      {sinAbrir.length > 0 && !premio && !girando && (
+      {ganados.length > 0 && !premio && !girando && (
         <section className="ruleta__pendientes">
-          <p className="ruleta__eti">Te tocó y no la has abierto</p>
+          <p className="ruleta__eti">Las que ya te han tocado</p>
           <ul className="lista">
-            {sinAbrir.map((t) => (
-              <li key={t.at}>
-                <Link to={`/carta/${t.cartaId}`} className="carta carta--cerrada" data-tipo="misterio">
-                  <span className="carta__marca" aria-hidden="true" />
-                  <span className="carta__texto">
-                    <span className="carta__tipo">Casilla {t.casilla}</span>
-                    <span className="carta__titulo">
-                      {cartas.find((c) => c.id === t.cartaId)?.titulo ?? 'Una carta de misterio'}
+            {ganados.map((t) => {
+              const abierta = Boolean(progreso.opened[t.cartaId])
+              return (
+                <li key={t.at}>
+                  <Link
+                    to={`/carta/${t.cartaId}`}
+                    className={`carta carta--${abierta ? 'abierta' : 'cerrada'}`}
+                    data-tipo="misterio"
+                  >
+                    <span className="carta__marca" aria-hidden="true" />
+                    <span className="carta__texto">
+                      <span className="carta__tipo">Casilla {t.casilla}</span>
+                      <span className="carta__titulo">
+                        {abierta
+                          ? (cartas.find((c) => c.id === t.cartaId)?.titulo ??
+                            'Una carta de misterio')
+                          : 'Todavía sin abrir'}
+                      </span>
+                      <span className="carta__fecha">La ganaste el {formatearFecha(t.at)}</span>
                     </span>
-                  </span>
-                  <span className="carta__estado">abrir</span>
-                </Link>
-              </li>
-            ))}
+                    <span className="carta__estado">{abierta ? 'releer' : 'obtener'}</span>
+                  </Link>
+                </li>
+              )
+            })}
           </ul>
         </section>
       )}

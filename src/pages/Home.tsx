@@ -130,7 +130,7 @@ const ETIQUETA: Record<EstadoCarta, string> = {
   sellada: 'sellada',
   futura: 'más adelante',
   'pide-prueba': 'pide prueba',
-  cerrada: 'abrir',
+  cerrada: 'obtener',
   'a-medias': 'terminar',
   abierta: 'releer',
 }
@@ -146,14 +146,23 @@ function CartaEnLista({
 }) {
   const bloqueada = estado === 'futura'
   const apertura = progreso.opened[carta.id]
-  const titulo = bloqueada && !carta.pista ? 'Una carta que llega más adelante' : carta.titulo
+  // Una de misterio ganada y sin abrir no puede enseñar su título en la lista:
+  // el título ES la sorpresa.
+  const misterioSinAbrir = carta.tipo === 'misterio' && !apertura
+  const titulo = misterioSinAbrir
+    ? 'Lo que te tocó en la ruleta'
+    : bloqueada && !carta.pista
+      ? 'Una carta que llega más adelante'
+      : carta.titulo
   const contenido = (
     <>
       <span className="carta__marca" aria-hidden="true" />
       <span className="carta__texto">
         <span className="carta__tipo">{NOMBRE_TIPO[carta.tipo]}</span>
         <span className="carta__titulo">{titulo}</span>
-        {carta.pista && <span className="carta__pista">{carta.pista}</span>}
+        {carta.pista && !misterioSinAbrir && (
+          <span className="carta__pista">{carta.pista}</span>
+        )}
         {apertura && (
           <span className="carta__fecha">Abierta el {formatearFecha(apertura.at)}</span>
         )}
@@ -241,7 +250,7 @@ function AccesoRuleta({ cuenta, sinAbrir }: { cuenta: Cuenta; sinAbrir: number }
         <span className="acceso__eti">La ruleta</span>
         <span className="acceso__que">
           {sinAbrir > 0
-            ? `Te tocó ${sinAbrir === 1 ? 'una carta' : `${sinAbrir} cartas`} y no la has abierto`
+            ? `Te tocó ${sinAbrir === 1 ? 'una carta y sigue' : `${sinAbrir} cartas y siguen`} sin obtener`
             : cuenta.tiradasListas > 0
               ? 'Puedes girar ya'
               : 'Cartas de misterio'}
@@ -279,8 +288,8 @@ export default function Home() {
     )
   if (status === 'bloqueado') return <Puerta />
 
-  // Las de misterio no salen aquí: se ganan en la ruleta y viven en su página.
-  const visibles = cartasVisibles(cartasDelMazo(cartas), progreso, new Date(), modoRevision)
+  // Las de misterio solo salen aquí si ya le han tocado en la ruleta.
+  const visibles = cartasVisibles(cartasDelMazo(cartas, progreso), progreso, new Date(), modoRevision)
   const conEstado = visibles.map((c) => ({ carta: c, estado: estadoDeCarta(c, progreso, new Date(), modoRevision) }))
   const paraAbrir = conEstado.filter(
     (x) => x.estado === 'cerrada' || x.estado === 'pide-prueba' || x.estado === 'a-medias',
@@ -365,7 +374,7 @@ export default function Home() {
 
       {abiertas.length > 0 && (
         <SeccionCartas
-          titulo="Ya abiertas"
+          titulo="Ya obtenidas"
           descripcion="Quedan aquí para volver cuando quieras."
           items={abiertas}
           progreso={progreso}

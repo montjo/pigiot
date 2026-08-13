@@ -22,12 +22,19 @@ export const ECONOMIA = {
   rachaTope: 5,
   /** Por abrir una carta del mazo (las de misterio no cuentan: son el premio). */
   carta: 25,
-  /** Por cumplir lo que pedía una carta (la foto de la prueba). */
+  /** Por cumplir lo que pedía una carta (la foto, o contárnoslo). */
   prueba: 50,
-  /** Por marcar como hecho un plan del bombo. */
-  plan: 30,
+  /** Por abrir una carta de misterio de las que se ganan en la ruleta. */
+  misterio: 30,
   /** Al terminar la intro, para que la primera tirada sea inmediata. */
   bienvenida: 200,
+  /**
+   * Lo que pesa una casilla verde en el sorteo frente a una de color, que pesa
+   * 1. Con 0,35 y tres cartas de color más una verde, la verde sale un 10 % de
+   * las veces; cuantas más cartas de color haya, más rara se vuelve, hasta
+   * acercarse al 5 % de una ruleta de verdad. Nunca es imposible.
+   */
+  pesoVerde: 0.35,
 }
 
 // Con estos números: una semana entrando cada día son 150 créditos
@@ -96,13 +103,12 @@ export function movimientos(progreso: Progreso, cartas: Carta[]): Movimiento[] {
   })
 
   for (const [id, apertura] of Object.entries(progreso.opened)) {
-    // Las de misterio no dan créditos: son el premio, no la moneda.
-    if (esMisterio(id)) continue
+    const misterio = esMisterio(id)
     lista.push({
       at: apertura.at,
-      concepto: 'Abriste una carta',
+      concepto: misterio ? 'Obtuviste una carta de misterio' : 'Obtuviste una carta',
       detalle: titulo(id),
-      creditos: ECONOMIA.carta,
+      creditos: misterio ? ECONOMIA.misterio : ECONOMIA.carta,
     })
   }
 
@@ -111,22 +117,10 @@ export function movimientos(progreso: Progreso, cartas: Carta[]): Movimiento[] {
     if (prueba.saltada) continue
     lista.push({
       at: prueba.at,
-      concepto: 'Cumpliste lo que pedía',
+      concepto: 'Obtuviste una carta que pedía prueba',
       detalle: titulo(id),
       creditos: ECONOMIA.prueba,
     })
-  }
-
-  for (const [id, sorteos] of Object.entries(progreso.sorteos)) {
-    for (const sorteo of sorteos) {
-      if (!sorteo.hechoAt) continue
-      lista.push({
-        at: sorteo.hechoAt,
-        concepto: 'Hiciste un plan del bombo',
-        detalle: carta(id)?.bombo?.find((p) => p.id === sorteo.planId)?.plan,
-        creditos: ECONOMIA.plan,
-      })
-    }
   }
 
   for (const tirada of Object.values(progreso.tiradas ?? {})) {
@@ -236,6 +230,33 @@ export function casillas(cartas: Carta[], progreso: Progreso): Casilla[] {
 /** Las que pueden salir: tienen carta detrás y todavía no han salido. */
 export function casillasVivas(lista: Casilla[]): Casilla[] {
   return lista.filter((c) => c.cartaId && !c.usada)
+}
+
+/** Lo que pesa una casilla en el sorteo. Las verdes, menos: son las raras. */
+export function peso(casilla: Casilla): number {
+  return casilla.color === 'verde' ? ECONOMIA.pesoVerde : 1
+}
+
+/**
+ * Elige una casilla al azar entre las que quedan, con la verde pesando menos
+ * que las de color pero sin llegar a ser imposible.
+ */
+export function elegirCasilla(vivas: Casilla[]): Casilla | null {
+  if (!vivas.length) return null
+  const total = vivas.reduce((t, c) => t + peso(c), 0)
+  let dado = Math.random() * total
+  for (const casilla of vivas) {
+    dado -= peso(casilla)
+    if (dado <= 0) return casilla
+  }
+  return vivas[vivas.length - 1]
+}
+
+/** Lo que sale la verde ahora mismo, en tanto por uno, para poder contarlo. */
+export function opcionesDeVerde(vivas: Casilla[]): number {
+  const total = vivas.reduce((t, c) => t + peso(c), 0)
+  if (!total) return 0
+  return vivas.filter((c) => c.color === 'verde').reduce((t, c) => t + peso(c), 0) / total
 }
 
 /** Las cartas de misterio que ya le han tocado, de la más nueva a la más vieja. */
