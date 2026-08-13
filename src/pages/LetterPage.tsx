@@ -101,7 +101,7 @@ function PanelPrueba({
 
   return (
     <section className={despues ? 'quest' : 'prueba'}>
-      <p className="prueba__etiqueta">{despues ? 'Y ahora te toca a ti' : 'Antes de abrir'}</p>
+      <p className="prueba__etiqueta">{despues ? 'Y ahora te toca a ti' : 'Para obtenerla'}</p>
       {despues ? (
         <p className="quest__que">{prueba.texto}</p>
       ) : (
