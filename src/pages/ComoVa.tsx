@@ -53,9 +53,9 @@ export default function ComoVa() {
 
         <h2>Algunas te piden algo</h2>
         <p>
-          Unas cuantas no se abren hasta que subes una foto de que ha pasado lo que dicen. No hay
-          nada que compruebe si es verdad: nos fiamos de ti. La foto es más para nosotros que para
-          la carta, y va a parar al álbum del grupo.
+          Unas cuantas te piden una foto, o que nos cuentes algo. No hay nada que compruebe si es
+          verdad: nos fiamos de ti. Lo que subas se guarda cifrado con tu contraseña, así que solo
+          lo podemos ver nosotros, y se queda en la carta para que puedas volver a verlo.
         </p>
 
         <h2>Nosotros vemos lo que abres</h2>

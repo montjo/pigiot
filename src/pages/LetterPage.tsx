@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { useSession } from '../lib/session-context'
+import { cargarMiniatura, subirFoto } from '../lib/fotos'
 import {
   estadoDeCarta,
   formatearFecha,
@@ -8,13 +9,28 @@ import {
   planPendiente,
   planesDisponibles,
 } from '../lib/estado'
-import { NOMBRE_TIPO, type Carta, type Plan } from '../lib/tipos'
+import { NOMBRE_TIPO, pruebaVaDespues, type Carta, type Plan, type PruebaAportada } from '../lib/tipos'
 
 const ARMADO_MS = 700
 
-function PanelPrueba({ carta, alAportar }: { carta: Carta; alAportar: (linea?: string) => void }) {
+function PanelPrueba({
+  carta,
+  despues = false,
+  alAportar,
+}: {
+  carta: Carta
+  /** true cuando el QUEST va al final de la carta, ya leída. */
+  despues?: boolean
+  alAportar: (datos: { lineas: string[]; fotoId?: string }) => void
+}) {
+  const { clave } = useSession()
+  const prueba = carta.prueba!
+  const preguntas = prueba.preguntas ?? []
+  const [archivo, setArchivo] = useState<File | null>(null)
   const [foto, setFoto] = useState<string | null>(null)
-  const [linea, setLinea] = useState('')
+  const [respuestas, setRespuestas] = useState<string[]>(() => preguntas.map(() => ''))
+  const [subiendo, setSubiendo] = useState(false)
+  const [falloAlSubir, setFalloAlSubir] = useState(false)
   const [salida, setSalida] = useState(false)
   const [ubicacion, setUbicacion] = useState<'sin-comprobar' | 'comprobando' | 'fuera' | 'dentro' | 'error'>('sin-comprobar')
 
@@ -25,8 +41,38 @@ function PanelPrueba({ carta, alAportar }: { carta: Carta; alAportar: (linea?: s
 
   useEffect(() => () => { if (foto) URL.revokeObjectURL(foto) }, [foto])
 
-  const prueba = carta.prueba!
   const esUbicacion = Boolean(prueba.ubicacion)
+  const pideArchivo = Boolean(prueba.pide) && !esUbicacion
+  // La primera pregunta es la que importa; las demás, si quiere.
+  const contestada = preguntas.length === 0 || respuestas[0].trim().length > 0
+  const listo = (esUbicacion ? ubicacion === 'fuera' : pideArchivo ? Boolean(foto) : true) && contestada
+
+  /**
+   * La foto se guarda cifrada antes de dar la prueba por buena, pero si falla
+   * la subida no se le deja encerrado: puede reintentar o seguir sin ella.
+   */
+  async function enviar() {
+    const lineas = respuestas.map((r) => r.trim()).filter(Boolean)
+    if (!archivo || !clave) {
+      alAportar({ lineas })
+      return
+    }
+    setSubiendo(true)
+    setFalloAlSubir(false)
+    try {
+      const fotoId = await subirFoto(clave, archivo, {
+        cartaId: carta.id,
+        pie: lineas[0],
+        ancla: carta.tipo === 'primera',
+      })
+      alAportar({ lineas, fotoId: fotoId ?? undefined })
+    } catch (causa) {
+      console.warn('No se ha podido guardar la foto.', causa)
+      setFalloAlSubir(true)
+    } finally {
+      setSubiendo(false)
+    }
+  }
 
   async function comprobarUbicacion() {
     if (!navigator.geolocation) {
@@ -54,10 +100,16 @@ function PanelPrueba({ carta, alAportar }: { carta: Carta; alAportar: (linea?: s
   }
 
   return (
-    <section className="prueba">
-      <p className="prueba__etiqueta">Antes de abrir</p>
-      <h1>{carta.titulo}</h1>
-      <p className="prueba__que">{prueba.texto}</p>
+    <section className={despues ? 'quest' : 'prueba'}>
+      <p className="prueba__etiqueta">{despues ? 'Y ahora te toca a ti' : 'Antes de abrir'}</p>
+      {despues ? (
+        <p className="quest__que">{prueba.texto}</p>
+      ) : (
+        <>
+          <h1>{carta.titulo}</h1>
+          <p className="prueba__que">{prueba.texto}</p>
+        </>
+      )}
 
       {esUbicacion ? (
         <div className="prueba__ubicacion">
@@ -72,10 +124,17 @@ function PanelPrueba({ carta, alAportar }: { carta: Carta; alAportar: (linea?: s
             {ubicacion === 'comprobando' ? 'Comprobando…' : 'Comprobar mi ubicación'}
           </button>
         </div>
-      ) : foto ? (
+      ) : !pideArchivo ? null : foto ? (
         <div className="prueba__preview">
           <img className="prueba__foto" src={foto} alt="La foto que acabas de elegir" />
-          <button type="button" className="enlace" onClick={() => setFoto(null)}>
+          <button
+            type="button"
+            className="enlace"
+            onClick={() => {
+              setFoto(null)
+              setArchivo(null)
+            }}
+          >
             cambiar foto
           </button>
         </div>
@@ -87,33 +146,125 @@ function PanelPrueba({ carta, alAportar }: { carta: Carta; alAportar: (linea?: s
             {...(prueba.camara ? { capture: 'environment' as const } : {})}
             onChange={(e) => {
               const f = e.target.files?.[0]
-              if (f) setFoto(URL.createObjectURL(f))
+              if (f) {
+                setArchivo(f)
+                setFoto(URL.createObjectURL(f))
+              }
             }}
           />
           <span>Elegir la foto</span>
         </label>
       )}
 
-      {prueba.pregunta && (
-        <label className="prueba__linea">
-          {prueba.pregunta}
-          <input value={linea} onChange={(e) => setLinea(e.target.value)} maxLength={140} />
+      {preguntas.map((pregunta, i) => (
+        <label className="prueba__linea" key={i}>
+          {pregunta}
+          <textarea
+            rows={2}
+            maxLength={700}
+            value={respuestas[i]}
+            onChange={(e) =>
+              setRespuestas((r) => r.map((v, n) => (n === i ? e.target.value : v)))
+            }
+          />
         </label>
-      )}
+      ))}
 
-      <button
-        type="button"
-        disabled={esUbicacion ? ubicacion !== 'fuera' : !foto}
-        onClick={() => alAportar(linea.trim() || undefined)}
-      >
-        {esUbicacion ? (ubicacion === 'fuera' ? 'Abrir la carta' : 'Comprueba tu ubicación para seguir') : foto ? 'Abrir la carta' : 'Elige una foto para seguir'}
+      <button type="button" disabled={!listo || subiendo} onClick={enviar}>
+        {subiendo
+          ? 'Guardando la foto…'
+          : despues
+            ? listo
+              ? 'Enviárselo'
+              : pideArchivo && !foto
+                ? 'Elige la foto para seguir'
+                : 'Contesta para seguir'
+            : esUbicacion
+              ? ubicacion === 'fuera'
+                ? 'Abrir la carta'
+                : 'Comprueba tu ubicación para seguir'
+              : listo
+                ? 'Abrir la carta'
+                : pideArchivo && !foto
+                  ? 'Elige una foto para seguir'
+                  : 'Contesta para seguir'}
       </button>
 
-      {salida && (
-        <button type="button" className="enlace" onClick={() => alAportar(undefined)}>
+      {falloAlSubir && (
+        <>
+          <p className="error">
+            No hemos podido guardar la foto. Si tienes mala cobertura, prueba otra vez en un
+            rato.
+          </p>
+          <button
+            type="button"
+            className="enlace"
+            onClick={() => alAportar({ lineas: respuestas.map((r) => r.trim()).filter(Boolean) })}
+          >
+            seguir sin guardar la foto
+          </button>
+        </>
+      )}
+
+      {salida && !despues && (
+        <button type="button" className="enlace" onClick={() => alAportar({ lineas: [] })}>
           se me está atragantando, ábrela igual
         </button>
       )}
+    </section>
+  )
+}
+
+/** La foto que subió, descifrada otra vez para que pueda volver a verla. */
+function FotoGuardada({ id }: { id: string }) {
+  const { clave } = useSession()
+  const [url, setUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!clave) return
+    let vivo = true
+    let suya: string | null = null
+    cargarMiniatura(clave, id)
+      .then((foto) => {
+        if (!vivo || !foto?.url) return
+        suya = foto.url
+        setUrl(foto.url)
+      })
+      .catch((e) => console.warn('No se ha podido recuperar la foto.', e))
+    return () => {
+      vivo = false
+      if (suya) URL.revokeObjectURL(suya)
+    }
+  }, [clave, id])
+
+  if (!url) return null
+  return (
+    <figure className="quest__foto">
+      <img src={url} alt="La foto que subiste con esta carta" loading="lazy" />
+    </figure>
+  )
+}
+
+/** Lo que queda en la carta cuando ya ha contestado: lo suyo, para releerlo. */
+function QuestHecho({ carta, aportada }: { carta: Carta; aportada: PruebaAportada }) {
+  const preguntas = carta.prueba?.preguntas ?? []
+  return (
+    <section className="quest quest--hecho">
+      <p className="prueba__etiqueta">Ya nos lo has contado</p>
+      {aportada.fotoId && <FotoGuardada id={aportada.fotoId} />}
+      {aportada.lineas?.length ? (
+        <dl className="quest__respuestas">
+          {aportada.lineas.map((linea, i) => (
+            <div key={i}>
+              {preguntas[i] && <dt>{preguntas[i]}</dt>}
+              <dd>{linea}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : (
+        <p className="apagado">No escribiste nada, y también vale.</p>
+      )}
+      <p className="apagado">El {formatearFecha(aportada.at)}</p>
     </section>
   )
 }
@@ -241,9 +392,9 @@ export default function LetterPage() {
         {volver}
         <PanelPrueba
           carta={carta}
-          alAportar={(linea) => {
+          alAportar={(datos) => {
             vinoDePrueba.current = true
-            aportarPrueba(carta.id, { linea })
+            aportarPrueba(carta.id, datos)
           }}
         />
       </main>
@@ -313,6 +464,19 @@ export default function LetterPage() {
             </>
           )}
         </p>
+
+        {/* El QUEST de las cartas que piden algo DESPUÉS de haberlas leído. */}
+        {carta.prueba &&
+          pruebaVaDespues(carta) &&
+          (progreso.pruebas[carta.id] ? (
+            <QuestHecho carta={carta} aportada={progreso.pruebas[carta.id]} />
+          ) : (
+            <PanelPrueba
+              carta={carta}
+              despues
+              alAportar={(datos) => aportarPrueba(carta.id, datos)}
+            />
+          ))}
 
         {carta.tipo === 'primera' &&
           (introPendiente(progreso) ? (

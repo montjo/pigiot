@@ -15,6 +15,11 @@ export function modoEfimero(activo: boolean) {
   efimero = activo
 }
 
+/** Lo consulta también la subida de fotos: en un ensayo no se sube nada. */
+export function esEfimero(): boolean {
+  return efimero
+}
+
 function dispositivo(): string {
   const ua = navigator.userAgent
   if (/iPhone/.test(ua)) return 'iPhone'
@@ -129,7 +134,7 @@ export function guardarPrueba(
   progressId: string,
   actual: Progreso,
   cartaId: string,
-  datos: { fotoId?: string; linea?: string },
+  datos: { fotoId?: string; lineas?: string[] },
 ): Progreso {
   if (actual.pruebas[cartaId]) return actual
   const entrada = { at: new Date().toISOString(), ...datos }

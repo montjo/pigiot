@@ -6,14 +6,59 @@ import { verProgreso } from '../lib/progress'
 import { useSession } from '../lib/session-context'
 import { formatearFecha } from '../lib/estado'
 import { contar } from '../lib/economia'
-import { PROGRESO_VACIO, type Progreso } from '../lib/tipos'
+import { cargarFotos } from '../lib/fotos'
+import { PROGRESO_VACIO, type FotoAlbum, type Progreso } from '../lib/tipos'
 
 const HASH = import.meta.env.VITE_ADMIN_PASSWORD_HASH ?? ''
 
 const dias = (iso: string) => Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000)
 
+/** Las fotos que ha ido subiendo, descifradas con la clave de las cartas. */
+function Fotos({ clave }: { clave: CryptoKey }) {
+  const [fotos, setFotos] = useState<FotoAlbum[] | null>(null)
+
+  useEffect(() => {
+    let vivo = true
+    let urls: string[] = []
+    cargarFotos(clave)
+      .then((lista) => {
+        if (!vivo) return
+        // Si alguna no descifra (foto de otra época, o de una prueba) se calla:
+        // mejor no pintarla que enseñar un hueco gris sin explicación.
+        const buenas = lista.filter((f) => f.url)
+        urls = buenas.map((f) => f.url!)
+        setFotos(buenas)
+      })
+      .catch((e) => {
+        console.warn('No se han podido cargar las fotos.', e)
+        if (vivo) setFotos([])
+      })
+    return () => {
+      vivo = false
+      urls.forEach((u) => URL.revokeObjectURL(u))
+    }
+  }, [clave])
+
+  if (!fotos?.length) return null
+
+  return (
+    <section className="diario">
+      <h2>Sus fotos</h2>
+      <ul className="rejilla">
+        {fotos.map((foto) => (
+          <li key={foto.id}>
+            <img src={foto.url} alt={foto.meta?.pie ?? ''} loading="lazy" />
+            <span className="apagado">{formatearFecha(foto.at)}</span>
+            {foto.meta?.pie && <span className="rejilla__pie">«{foto.meta.pie}»</span>}
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
 export default function Admin() {
-  const { progressId, cartas } = useSession()
+  const { progressId, cartas, clave } = useSession()
   const [dentro, setDentro] = useState(false)
   const [password, setPassword] = useState('')
   const [fallo, setFallo] = useState(false)
@@ -133,12 +178,14 @@ export default function Admin() {
             <span className="apagado">
               {' '}
               · {formatearFecha(e.at)} · {e.device}
-              {p.pruebas[id]?.linea && ` · «${p.pruebas[id].linea}»`}
+              {p.pruebas[id]?.lineas?.map((linea, n) => <span key={n}> · «{linea}»</span>)}
             </span>
           </li>
         ))}
       </ul>
       {abiertas.length === 0 && <p className="apagado">Todavía no ha abierto ninguna.</p>}
+
+      {clave && <Fotos clave={clave} />}
 
       {pendientes.length > 0 && (
         <section className="diario">

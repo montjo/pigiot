@@ -15,16 +15,26 @@ export const NOMBRE_TIPO: Record<TipoCarta, string> = {
   aparte: 'Punto y aparte',
 }
 
-/** Lo que hay que aportar para abrir una carta. */
+/** Lo que hay que aportar en una carta: el QUEST. */
 export type Prueba = {
   /** Qué tiene que hacer, en su idioma: «Una foto tuya con nosotros, de ahora mismo». */
   texto: string
-  /** Si existe, además de la foto se le pide escribir una línea. */
-  pregunta?: string
+  /** Las preguntas que se le hacen, en orden. La primera es obligatoria. */
+  preguntas?: string[]
+  /**
+   * Si además de contestar hay que aportar algo, qué. Solo foto: un vídeo no
+   * cabe en un documento de Firestore (1 MiB) y Storage es de pago.
+   */
+  pide?: 'foto'
   /** true en las pruebas que piden una foto del momento (abre la cámara). */
   camara?: boolean
   /** true cuando la carta debe comprobar que está fuera de España. */
   ubicacion?: boolean
+  /**
+   * true si se aporta DESPUÉS de leer la carta, no antes. En los retos siempre
+   * es así; en las normales, cuando el QUEST habla de lo que acaba de leer.
+   */
+  despues?: boolean
 }
 
 /** Un escrito firmado por una persona del grupo. */
@@ -80,9 +90,9 @@ export type Carta = {
   bombo?: Plan[]
 }
 
-/** En las de reto la prueba se aporta DESPUÉS de abrirla; en el resto, antes. */
+/** En las de reto la prueba se aporta DESPUÉS de abrirla; en el resto, si lo pide. */
 export function pruebaVaDespues(carta: Carta): boolean {
-  return carta.tipo === 'reto'
+  return carta.tipo === 'reto' || Boolean(carta.prueba?.despues)
 }
 
 // --- Lo que viaja cifrado ---------------------------------------------------
@@ -110,8 +120,8 @@ export type PruebaAportada = {
   at: string
   /** Id del documento de la colección `photos`, si se subió foto. */
   fotoId?: string
-  /** La línea que escribió, cifrada. */
-  linea?: string
+  /** Lo que contestó, una entrada por pregunta. Viaja EN CLARO: ojo con esto. */
+  lineas?: string[]
 }
 
 /** Una tirada de la ruleta: lo que se paga y lo que sale. */
@@ -183,5 +193,5 @@ export type FotoAlbum = {
   /** Miniatura ya descifrada, lista para <img src>. */
   url?: string
   /** Metadatos descifrados. */
-  meta?: { de?: string; pie?: string }
+  meta?: { cartaId?: string; de?: string; pie?: string }
 }

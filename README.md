@@ -49,6 +49,22 @@ terminar la intro se regalan 200 para que la primera tirada sea inmediata.
 
 El saldo no se guarda en ningún sitio: se recalcula siempre a partir del registro.
 
+### Las fotos que sube él
+
+Van dentro de Firestore, no en Storage (que exige tarjeta). Antes de subirlas, el
+navegador las recomprime a 1600 px de lado y las cifra con la clave de las cartas:
+la grande a `photosFull` y una miniatura de 400 px a `photos`, con el mismo id. Un
+documento de Firestore aguanta 1 MiB y las reglas cortan en 800 KB, así que
+`src/lib/fotos.ts` baja calidad hasta que entra; una foto de móvil de 12 MP acaba
+en unas 300 KB.
+
+Con el gigabyte del plan gratuito caben más de mil fotos. Las veis en `/#/progreso`
+si habéis entrado antes con la contraseña de las cartas: sin ella no hay forma de
+descifrarlas, ni para vosotros ni para nadie que encuentre la base de datos.
+
+**Los vídeos no caben** (20-60 MB cada uno). La carta de la habilidad nueva le pide
+que lo mande al grupo.
+
 Cuando estén escritas:
 
 ```bash

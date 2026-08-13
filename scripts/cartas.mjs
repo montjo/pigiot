@@ -23,6 +23,8 @@ const ITERACIONES = 600_000
 const TIPOS = ['primera', 'normal', 'misterio', 'reto', 'aparte']
 /** Solo en las de misterio: en qué color de la ruleta cae. Ver src/lib/economia.ts. */
 const COLORES_CASILLA = ['rojo', 'negro', 'verde']
+/** Lo que puede pedir una prueba además de las preguntas. */
+const PIDE = ['foto']
 const MIME = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp' }
 
 const avisos = []
@@ -59,6 +61,7 @@ function parsear(texto, fichero) {
     const clave = linea.slice(0, corte).trim()
     const valor = linea.slice(corte + 1).trim()
     if (clave === 'foto') (cabecera.foto ??= []).push(valor)
+    else if (clave === 'pregunta') (cabecera.pregunta ??= []).push(valor)
     else cabecera[clave] = valor
   }
 
@@ -200,11 +203,26 @@ async function leerCartas() {
     if (cabecera.escritaEl) carta.escritaEl = cabecera.escritaEl
     if (cabecera.desde) carta.desde = cabecera.desde
     if (cabecera.oculta === 'true') carta.oculta = true
+    if (!cabecera.prueba && (cabecera.pregunta || cabecera.pide || cabecera.despues)) {
+      morir(
+        `${f}: hay "pregunta", "pide" o "despues" pero falta "prueba".\n` +
+          `  En "prueba" va la frase que le pide lo que sea; el resto la acompaña.`,
+      )
+    }
+    if (cabecera.pide && !PIDE.includes(cabecera.pide)) {
+      morir(`${f}: "pide" solo puede ser ${PIDE.join(' o ')}. He encontrado: ${cabecera.pide}`)
+    }
     if (cabecera.prueba) {
       carta.prueba = { texto: cabecera.prueba }
-      if (cabecera.pregunta) carta.prueba.pregunta = cabecera.pregunta
-      if (cabecera.camara === 'true') carta.prueba.camara = true
+      if (cabecera.pregunta) carta.prueba.preguntas = cabecera.pregunta
+      if (cabecera.pide) carta.prueba.pide = cabecera.pide
+      // La cámara implica foto: es la foto de ahora mismo, no una del carrete.
+      if (cabecera.camara === 'true') {
+        carta.prueba.pide = 'foto'
+        carta.prueba.camara = true
+      }
       if (cabecera.ubicacion === 'true') carta.prueba.ubicacion = true
+      if (cabecera.despues === 'true' || tipo === 'reto') carta.prueba.despues = true
     }
     if (cuerpo) carta.cuerpo = parrafos(cuerpo)
     if (cabecera.voces) carta.voces = await leerVoces(cabecera.voces, f)

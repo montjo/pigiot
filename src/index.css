@@ -172,7 +172,8 @@ select {
 
 input[type='password'],
 input[type='text'],
-.prueba__linea input {
+.prueba__linea input,
+.prueba__linea textarea {
   width: 100%;
   min-height: 50px;
   padding: 0.82rem 0.98rem;
@@ -1289,8 +1290,15 @@ ul.diario {
   text-align: left;
 }
 
-.prueba__linea input {
+.prueba__linea input,
+.prueba__linea textarea {
   margin-top: 0.35rem;
+}
+
+.prueba__linea textarea {
+  min-height: 5.5rem;
+  resize: vertical;
+  line-height: 1.5;
 }
 
 .prueba > button:not(.enlace) {
@@ -1864,6 +1872,108 @@ ul.diario {
   margin: 0 0 1rem;
   font-size: 1.02rem;
   line-height: 1.5;
+}
+
+/* El QUEST al final de una carta ya leída. */
+.quest {
+  margin: 1.7rem 0 0.3rem;
+  padding: 1.25rem 1.1rem;
+  border: 1px solid rgba(168, 138, 98, 0.45);
+  border-left: 4px solid var(--color-tipo, var(--lacre));
+  border-radius: var(--radio-sm);
+  background: rgba(255, 253, 247, 0.62);
+}
+
+.quest .prueba__etiqueta {
+  margin-bottom: 0.45rem;
+  color: var(--color-tipo, var(--lacre));
+}
+
+.quest__que {
+  margin-bottom: 1rem;
+  font-size: 1.04rem;
+  line-height: 1.55;
+}
+
+.quest .prueba__linea {
+  margin-bottom: 1rem;
+}
+
+.quest > button:not(.enlace) {
+  width: 100%;
+  background: var(--color-tipo, var(--lacre));
+}
+
+.quest__foto {
+  margin: 0 0 0.9rem;
+}
+
+.quest__foto img {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-sm);
+}
+
+/* Las fotos en la trastienda. */
+.rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: 0.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.rejilla li {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0;
+  border: 0;
+}
+
+.rejilla img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: var(--radio-sm);
+  background: rgba(255, 247, 232, 0.08);
+}
+
+.rejilla__pie {
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  font-style: italic;
+  color: rgba(255, 247, 232, 0.8);
+}
+
+.quest--hecho {
+  background: rgba(47, 111, 97, 0.07);
+}
+
+.quest__respuestas {
+  margin: 0 0 0.9rem;
+}
+
+.quest__respuestas div + div {
+  margin-top: 0.9rem;
+}
+
+.quest__respuestas dt {
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: var(--tinta-2);
+}
+
+.quest__respuestas dd {
+  margin: 0.15rem 0 0;
+  padding-left: 0.75rem;
+  border-left: 2px solid var(--linea);
+  font-style: italic;
+  white-space: pre-wrap;
 }
 
 /* El relevo al final de «La primera». */
