@@ -28,11 +28,11 @@ export type Prueba = {
   pide?: 'foto'
   /** true en las pruebas que piden una foto del momento (abre la cámara). */
   camara?: boolean
-  /** true cuando la carta debe comprobar que está fuera de España. */
-  ubicacion?: boolean
+  /** Si la carta comprueba dónde está, qué tiene que cumplir. */
+  ubicacion?: 'fuera-de-espana' | 'otro-continente'
   /**
-   * true si se aporta DESPUÉS de leer la carta, no antes. En los retos siempre
-   * es así; en las normales, cuando el QUEST habla de lo que acaba de leer.
+   * true si se aporta DESPUÉS de leer la carta, no antes. Se usa cuando lo que
+   * se le pide habla de lo que acaba de leer.
    */
   despues?: boolean
 }
@@ -90,9 +90,9 @@ export type Carta = {
   bombo?: Plan[]
 }
 
-/** En las de reto la prueba se aporta DESPUÉS de abrirla; en el resto, si lo pide. */
+/** Casi todas las pruebas se aportan para OBTENER la carta; algunas, después de leerla. */
 export function pruebaVaDespues(carta: Carta): boolean {
-  return carta.tipo === 'reto' || Boolean(carta.prueba?.despues)
+  return Boolean(carta.prueba?.despues)
 }
 
 // --- Lo que viaja cifrado ---------------------------------------------------

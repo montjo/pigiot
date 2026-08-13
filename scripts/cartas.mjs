@@ -25,6 +25,8 @@ const TIPOS = ['primera', 'normal', 'misterio', 'reto', 'aparte']
 const COLORES_CASILLA = ['rojo', 'negro', 'verde']
 /** Lo que puede pedir una prueba además de las preguntas. */
 const PIDE = ['foto']
+/** Qué comprueba «ubicacion». `true` se queda por lo que ya estaba escrito. */
+const UBICACIONES = { true: 'fuera-de-espana', espana: 'fuera-de-espana', continente: 'otro-continente' }
 const MIME = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp' }
 
 const avisos = []
@@ -209,6 +211,12 @@ async function leerCartas() {
           `  En "prueba" va la frase que le pide lo que sea; el resto la acompaña.`,
       )
     }
+    if (cabecera.ubicacion && !UBICACIONES[cabecera.ubicacion]) {
+      morir(
+        `${f}: "ubicacion" solo puede ser ${Object.keys(UBICACIONES).join(', ')}.\n` +
+          `  He encontrado: ${cabecera.ubicacion}`,
+      )
+    }
     if (cabecera.pide && !PIDE.includes(cabecera.pide)) {
       morir(`${f}: "pide" solo puede ser ${PIDE.join(' o ')}. He encontrado: ${cabecera.pide}`)
     }
@@ -221,8 +229,8 @@ async function leerCartas() {
         carta.prueba.pide = 'foto'
         carta.prueba.camara = true
       }
-      if (cabecera.ubicacion === 'true') carta.prueba.ubicacion = true
-      if (cabecera.despues === 'true' || tipo === 'reto') carta.prueba.despues = true
+      if (cabecera.ubicacion) carta.prueba.ubicacion = UBICACIONES[cabecera.ubicacion]
+      if (cabecera.despues === 'true') carta.prueba.despues = true
     }
     if (cuerpo) carta.cuerpo = parrafos(cuerpo)
     if (cabecera.voces) carta.voces = await leerVoces(cabecera.voces, f)

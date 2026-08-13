@@ -42,6 +42,7 @@ function PanelPrueba({
   useEffect(() => () => { if (foto) URL.revokeObjectURL(foto) }, [foto])
 
   const esUbicacion = Boolean(prueba.ubicacion)
+  const otroContinente = prueba.ubicacion === 'otro-continente'
   const pideArchivo = Boolean(prueba.pide) && !esUbicacion
   // La primera pregunta es la que importa; las demás, si quiere.
   const contestada = preguntas.length === 0 || respuestas[0].trim().length > 0
@@ -87,9 +88,13 @@ function PanelPrueba({
           const respuesta = await fetch(
             `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${coords.latitude}&longitude=${coords.longitude}&localityLanguage=es`,
           )
-          if (!respuesta.ok) throw new Error('No se pudo consultar el país')
-          const datos = (await respuesta.json()) as { countryCode?: string }
-          setUbicacion(datos.countryCode === 'ES' ? 'dentro' : 'fuera')
+          if (!respuesta.ok) throw new Error('No se pudo consultar dónde estás')
+          const datos = (await respuesta.json()) as { countryCode?: string; continentCode?: string }
+          const cumple =
+            prueba.ubicacion === 'otro-continente'
+              ? datos.continentCode !== 'EU'
+              : datos.countryCode !== 'ES'
+          setUbicacion(cumple ? 'fuera' : 'dentro')
         } catch {
           setUbicacion('error')
         }
@@ -114,11 +119,20 @@ function PanelPrueba({
       {esUbicacion ? (
         <div className="prueba__ubicacion">
           <p className="prueba__ubicacion-estado">
-            {ubicacion === 'fuera' && 'Estás fuera de España. Esta carta ya puede abrirse.'}
-            {ubicacion === 'dentro' && 'Parece que sigues en España. Todavía no es el momento.'}
+            {ubicacion === 'fuera' &&
+              (otroContinente
+                ? 'Estás fuera de Europa. Esta carta ya es tuya.'
+                : 'Estás fuera de España. Esta carta ya es tuya.')}
+            {ubicacion === 'dentro' &&
+              (otroContinente
+                ? 'Parece que sigues en Europa. Todavía no es el momento.'
+                : 'Parece que sigues en España. Todavía no es el momento.')}
             {ubicacion === 'comprobando' && 'Comprobando dónde estás…'}
             {ubicacion === 'error' && 'No hemos podido comprobar tu ubicación. Necesitamos permiso para verificarla.'}
-            {ubicacion === 'sin-comprobar' && 'Usaremos la ubicación del dispositivo para comprobar que estás fuera de España.'}
+            {ubicacion === 'sin-comprobar' &&
+              (otroContinente
+                ? 'Usaremos la ubicación del dispositivo para comprobar que estás en otro continente.'
+                : 'Usaremos la ubicación del dispositivo para comprobar que estás fuera de España.')}
           </p>
           <button type="button" className="prueba__ubicacion-boton" onClick={comprobarUbicacion} disabled={ubicacion === 'comprobando'}>
             {ubicacion === 'comprobando' ? 'Comprobando…' : 'Comprobar mi ubicación'}
@@ -182,7 +196,7 @@ function PanelPrueba({
             : esUbicacion
               ? ubicacion === 'fuera'
                 ? 'Abrir la carta'
-                : 'Comprueba tu ubicación para seguir'
+                : 'Comprueba dónde estás para seguir'
               : listo
                 ? 'Abrir la carta'
                 : pideArchivo && !foto

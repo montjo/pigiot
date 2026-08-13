@@ -9,7 +9,7 @@ const QUE_ES: Record<string, string> = {
   normal: '«Me pasó algo.» Un logro, una experiencia, algo que deja marca.',
   misterio:
     '«Ni idea de lo que hay dentro.» Una misión que hemos montado nosotros. No están en la lista: se ganan girando la ruleta, y girar cuesta créditos.',
-  reto: '«Me puse a prueba y lo conseguí.» Primero la lees, luego cumples.',
+  reto: '«Me puse a prueba y lo conseguí.» Te retamos a algo. Lo haces, lo demuestras y la obtienes.',
   aparte: '«Mi vida cambió.» Las gordas, las que abren capítulo. No las gastes antes de tiempo.',
 }
 

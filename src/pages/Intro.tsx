@@ -89,7 +89,7 @@ function pasos(cuantas: number): Paso[] {
       titulo: 'Las que te pones tú',
       lineas: [
         'Pruebas que piden esfuerzo, cabeza, valentía o aguante.',
-        'Se abren cuando decides salir de tu zona. Primero la lees y luego cumples: aquí la prueba va después.',
+        'Aquí no vale con que te pase algo: hay que salir de tu zona y hacerlo. Lo demuestras y la carta es tuya.',
       ],
     },
     {
