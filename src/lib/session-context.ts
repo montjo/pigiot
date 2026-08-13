@@ -19,7 +19,10 @@ export type SessionState = {
   unlock: (password: string) => Promise<boolean>
   lock: () => void
   abrir: (cartaId: string) => void
-  aportarPrueba: (cartaId: string, datos: { fotoId?: string; lineas?: string[] }) => void
+  aportarPrueba: (
+    cartaId: string,
+    datos: { fotoId?: string; lineas?: string[]; saltada?: boolean },
+  ) => void
   girarBombo: (cartaId: string) => Plan | null
   /** Cobra una tirada y devuelve la casilla que ha salido. */
   girarRuleta: () => Tirada | null

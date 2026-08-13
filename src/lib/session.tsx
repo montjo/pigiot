@@ -148,7 +148,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   )
 
   const aportarPrueba = useCallback(
-    (cartaId: string, datos: { fotoId?: string; lineas?: string[] }) => {
+    (cartaId: string, datos: { fotoId?: string; lineas?: string[]; saltada?: boolean }) => {
       if (!modoRevision) fijar(guardarPrueba(id, ref.current, cartaId, datos))
     },
     [id, fijar, modoRevision],

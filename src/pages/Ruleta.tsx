@@ -9,7 +9,10 @@ import {
   casillasVivas,
   contar,
   misteriosGanados,
+  movimientos,
   type Casilla,
+  type Cuenta,
+  type Movimiento,
 } from '../lib/economia'
 import type { Tirada } from '../lib/tipos'
 
@@ -91,6 +94,89 @@ function Premio({ tirada, casilla }: { tirada: Tirada; casilla?: Casilla }) {
   )
 }
 
+const DE_GOLPE = 12
+
+/** Todo lo que ha ganado y gastado, y de dónde ha salido cada crédito. */
+function Historial({ movimientos, cuenta }: { movimientos: Movimiento[]; cuenta: Cuenta }) {
+  const [tope, setTope] = useState(DE_GOLPE)
+  const quedan = movimientos.length - tope
+
+  return (
+    <section className="ruleta__cuentas">
+      <h2>Tu cuenta</h2>
+      <div className="cuenta-resumen">
+        <p>
+          <span>Ganado</span>
+          <strong>{cuenta.ganado}</strong>
+        </p>
+        <p>
+          <span>Gastado</span>
+          <strong>−{cuenta.gastado}</strong>
+        </p>
+        <p>
+          <span>Te quedan</span>
+          <strong className="es-saldo">{cuenta.saldo}</strong>
+        </p>
+      </div>
+
+      {movimientos.length === 0 ? (
+        <p className="apagado">Todavía no hay nada apuntado. Entra mañana y ya habrá.</p>
+      ) : (
+        <>
+          <ul className="movimientos">
+            {movimientos.slice(0, tope).map((m, i) => (
+              <li key={`${m.at}-${i}`} className={m.creditos < 0 ? 'es-gasto' : undefined}>
+                <span className="movimientos__que">{m.concepto}</span>
+                <span className="movimientos__n">
+                  {m.creditos > 0 ? '+' : '−'}
+                  {Math.abs(m.creditos)}
+                </span>
+                <span className="movimientos__cuando">
+                  {m.detalle && <em>{m.detalle} · </em>}
+                  {formatearFecha(m.at)}
+                </span>
+              </li>
+            ))}
+          </ul>
+          {quedan > 0 && (
+            <button type="button" className="enlace" onClick={() => setTope(tope + DE_GOLPE * 2)}>
+              ver {quedan} {quedan === 1 ? 'movimiento anterior' : 'movimientos anteriores'}
+            </button>
+          )}
+        </>
+      )}
+
+      <details className="tarifas">
+        <summary>Cómo se ganan créditos</summary>
+        <ul className="cuentas">
+          <li>
+            <span>Entrar cada día</span>
+            <span>
+              {ECONOMIA.visita} + {ECONOMIA.rachaPaso} por día de racha
+            </span>
+          </li>
+          <li>
+            <span>Abrir una carta del mazo</span>
+            <span>{ECONOMIA.carta}</span>
+          </li>
+          <li>
+            <span>Cumplir lo que pide una carta</span>
+            <span>{ECONOMIA.prueba}</span>
+          </li>
+          <li>
+            <span>Hacer un plan del bombo</span>
+            <span>{ECONOMIA.plan}</span>
+          </li>
+          <li>
+            <span>Cada tirada de la ruleta</span>
+            <span>−{ECONOMIA.tirada}</span>
+          </li>
+        </ul>
+      </details>
+    </section>
+  )
+}
+
 export default function Ruleta() {
   const { status, cartas, progreso, girarRuleta, modoRevision } = useSession()
   const [giro, setGiro] = useState(0)
@@ -104,7 +190,8 @@ export default function Ruleta() {
   if (status !== 'abierto') return <Navigate to="/" replace />
 
   const lista = casillas(cartas, progreso)
-  const cuenta = contar(progreso, cartas)
+  const historial = movimientos(progreso, cartas)
+  const cuenta = contar(progreso, cartas, historial)
   const vivas = casillasVivas(lista)
   const ganados = misteriosGanados(progreso)
   const sinAbrir = ganados.filter((t) => !progreso.opened[t.cartaId])
@@ -197,41 +284,7 @@ export default function Ruleta() {
         </section>
       )}
 
-      <section className="ruleta__cuentas">
-        <h2>De dónde salen los créditos</h2>
-        <ul className="cuentas">
-          <li>
-            <span>Entrar cada día</span>
-            <span>
-              {ECONOMIA.visita} + {ECONOMIA.rachaPaso} por día de racha
-            </span>
-          </li>
-          <li>
-            <span>Abrir una carta del mazo</span>
-            <span>{ECONOMIA.carta}</span>
-          </li>
-          <li>
-            <span>Cumplir lo que pide una carta</span>
-            <span>{ECONOMIA.prueba}</span>
-          </li>
-          <li>
-            <span>Hacer un plan del bombo</span>
-            <span>{ECONOMIA.plan}</span>
-          </li>
-        </ul>
-        {cuenta.racha > 0 && (
-          <p className="apagado">
-            Llevas {cuenta.racha} {cuenta.racha === 1 ? 'día' : 'días'} seguidos. Hoy te ha dado{' '}
-            {cuenta.hoy}.
-          </p>
-        )}
-        {ganados.length > 0 && (
-          <p className="apagado">
-            Has girado {ganados.length} {ganados.length === 1 ? 'vez' : 'veces'}; la última, el{' '}
-            {formatearFecha(ganados[0].at)}.
-          </p>
-        )}
-      </section>
+      <Historial movimientos={historial} cuenta={cuenta} />
     </main>
   )
 }

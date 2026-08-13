@@ -122,6 +122,11 @@ export type PruebaAportada = {
   fotoId?: string
   /** Lo que contestó, una entrada por pregunta. Viaja EN CLARO: ojo con esto. */
   lineas?: string[]
+  /**
+   * true si abrió la carta con la salida de emergencia, sin aportar nada. La
+   * carta se abre igual, pero eso no da créditos.
+   */
+  saltada?: boolean
 }
 
 /** Una tirada de la ruleta: lo que se paga y lo que sale. */

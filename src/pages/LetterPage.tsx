@@ -21,7 +21,7 @@ function PanelPrueba({
   carta: Carta
   /** true cuando el QUEST va al final de la carta, ya leída. */
   despues?: boolean
-  alAportar: (datos: { lineas: string[]; fotoId?: string }) => void
+  alAportar: (datos: { lineas: string[]; fotoId?: string; saltada?: boolean }) => void
 }) {
   const { clave } = useSession()
   const prueba = carta.prueba!
@@ -207,7 +207,11 @@ function PanelPrueba({
       )}
 
       {salida && !despues && (
-        <button type="button" className="enlace" onClick={() => alAportar({ lineas: [] })}>
+        <button
+          type="button"
+          className="enlace"
+          onClick={() => alAportar({ lineas: [], saltada: true })}
+        >
           se me está atragantando, ábrela igual
         </button>
       )}
@@ -245,12 +249,20 @@ function FotoGuardada({ id }: { id: string }) {
   )
 }
 
-/** Lo que queda en la carta cuando ya ha contestado: lo suyo, para releerlo. */
-function QuestHecho({ carta, aportada }: { carta: Carta; aportada: PruebaAportada }) {
+/**
+ * Lo que él puso en esta carta —la foto y lo que escribió—, ya esté abierta
+ * desde antes (la prueba iba primero) o lo haya contado al final.
+ */
+function Aportado({ carta, aportada }: { carta: Carta; aportada: PruebaAportada }) {
   const preguntas = carta.prueba?.preguntas ?? []
+  // Con la salida de emergencia se puede abrir una carta sin aportar nada.
+  if (!aportada.fotoId && !aportada.lineas?.length) return null
+
   return (
     <section className="quest quest--hecho">
-      <p className="prueba__etiqueta">Ya nos lo has contado</p>
+      <p className="prueba__etiqueta">
+        {pruebaVaDespues(carta) ? 'Ya nos lo has contado' : 'Con esto la abriste'}
+      </p>
       {aportada.fotoId && <FotoGuardada id={aportada.fotoId} />}
       {aportada.lineas?.length ? (
         <dl className="quest__respuestas">
@@ -465,17 +477,21 @@ export default function LetterPage() {
           )}
         </p>
 
-        {/* El QUEST de las cartas que piden algo DESPUÉS de haberlas leído. */}
+        {/*
+          Lo que aportó, si aportó algo, y si no el QUEST de las que piden algo
+          DESPUÉS de haberlas leído.
+        */}
         {carta.prueba &&
-          pruebaVaDespues(carta) &&
           (progreso.pruebas[carta.id] ? (
-            <QuestHecho carta={carta} aportada={progreso.pruebas[carta.id]} />
+            <Aportado carta={carta} aportada={progreso.pruebas[carta.id]} />
           ) : (
-            <PanelPrueba
-              carta={carta}
-              despues
-              alAportar={(datos) => aportarPrueba(carta.id, datos)}
-            />
+            pruebaVaDespues(carta) && (
+              <PanelPrueba
+                carta={carta}
+                despues
+                alAportar={(datos) => aportarPrueba(carta.id, datos)}
+              />
+            )
           ))}
 
         {carta.tipo === 'primera' &&

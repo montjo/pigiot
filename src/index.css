@@ -1775,9 +1775,111 @@ ul.diario {
   color: rgba(255, 247, 232, 0.72);
 }
 
+.cuenta-resumen {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 1.1rem;
+}
+
+.cuenta-resumen p {
+  display: grid;
+  gap: 0.1rem;
+  margin: 0;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid rgba(255, 247, 232, 0.16);
+  border-radius: var(--radio-sm);
+  background: rgba(7, 29, 30, 0.42);
+  font-family: var(--sans);
+}
+
+.cuenta-resumen span {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 247, 232, 0.5);
+}
+
+.cuenta-resumen strong {
+  font-size: 1.16rem;
+  font-weight: 820;
+  color: rgba(255, 247, 232, 0.9);
+}
+
+.cuenta-resumen .es-saldo {
+  color: var(--oro);
+}
+
+.movimientos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.movimientos li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0 0.8rem;
+  padding: 0.62rem 0;
+  border-bottom: 1px solid rgba(255, 247, 232, 0.1);
+  font-family: var(--sans);
+}
+
+.movimientos__que {
+  font-size: 0.95rem;
+  color: rgba(255, 247, 232, 0.92);
+}
+
+.movimientos__n {
+  font-size: 0.95rem;
+  font-weight: 840;
+  font-variant-numeric: tabular-nums;
+  color: var(--oro);
+  text-align: right;
+}
+
+.es-gasto .movimientos__n {
+  color: #e08a83;
+}
+
+.movimientos__cuando {
+  grid-column: 1 / -1;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: rgba(255, 247, 232, 0.5);
+}
+
+.movimientos__cuando em {
+  font-style: italic;
+  color: rgba(255, 247, 232, 0.66);
+}
+
+.ruleta__cuentas .enlace {
+  color: rgba(255, 247, 232, 0.72);
+  text-decoration-color: rgba(255, 247, 232, 0.32);
+}
+
+.tarifas {
+  margin-top: 1.2rem;
+}
+
+.tarifas summary {
+  cursor: pointer;
+  padding: 0.3rem 0;
+  font-family: var(--sans);
+  font-size: 0.86rem;
+  font-weight: 760;
+  color: rgba(255, 247, 232, 0.66);
+}
+
+.tarifas summary::marker {
+  color: rgba(255, 247, 232, 0.4);
+}
+
 .cuentas {
   list-style: none;
-  margin: 0 0 0.9rem;
+  margin: 0.5rem 0 0;
   padding: 0;
   font-family: var(--sans);
   font-size: 0.9rem;

@@ -134,7 +134,7 @@ export function guardarPrueba(
   progressId: string,
   actual: Progreso,
   cartaId: string,
-  datos: { fotoId?: string; lineas?: string[] },
+  datos: { fotoId?: string; lineas?: string[]; saltada?: boolean },
 ): Progreso {
   if (actual.pruebas[cartaId]) return actual
   const entrada = { at: new Date().toISOString(), ...datos }

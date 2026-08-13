@@ -52,6 +52,95 @@ export function valorDelDia(racha: number): number {
   return ECONOMIA.visita + Math.min(Math.max(racha, 1) - 1, ECONOMIA.rachaTope) * ECONOMIA.rachaPaso
 }
 
+/** Una línea del historial: lo que dio o lo que costó, y cuándo. */
+export type Movimiento = {
+  /** ISO, solo para ordenar. Los días no tienen hora: se les pone la de apertura. */
+  at: string
+  concepto: string
+  /** El título de la carta, el plan, la casilla que salió… */
+  detalle?: string
+  /** Positivo si gana, negativo si gasta. */
+  creditos: number
+}
+
+/**
+ * Todo lo que ha movido créditos, de lo más nuevo a lo más viejo. De aquí sale
+ * también el saldo: si el historial y el saldo se calcularan por separado,
+ * antes o después dejarían de cuadrar.
+ */
+export function movimientos(progreso: Progreso, cartas: Carta[]): Movimiento[] {
+  const carta = (id: string) => cartas.find((c) => c.id === id)
+  const titulo = (id: string) => carta(id)?.titulo ?? 'una carta'
+  const esMisterio = (id: string) => carta(id)?.tipo === 'misterio'
+  const lista: Movimiento[] = []
+
+  if (progreso.tutorialAt) {
+    lista.push({
+      at: progreso.tutorialAt,
+      concepto: 'De bienvenida',
+      detalle: 'por enterarte de cómo va esto',
+      creditos: ECONOMIA.bienvenida,
+    })
+  }
+
+  const dias = Object.keys(progreso.dias ?? {}).sort()
+  let racha = 0
+  dias.forEach((dia, i) => {
+    racha = i > 0 && esElDiaSiguiente(dias[i - 1], dia) ? racha + 1 : 1
+    lista.push({
+      at: `${dia}T00:00:00`,
+      concepto: 'Entraste',
+      detalle: racha > 1 ? `${racha} días seguidos` : undefined,
+      creditos: valorDelDia(racha),
+    })
+  })
+
+  for (const [id, apertura] of Object.entries(progreso.opened)) {
+    // Las de misterio no dan créditos: son el premio, no la moneda.
+    if (esMisterio(id)) continue
+    lista.push({
+      at: apertura.at,
+      concepto: 'Abriste una carta',
+      detalle: titulo(id),
+      creditos: ECONOMIA.carta,
+    })
+  }
+
+  for (const [id, prueba] of Object.entries(progreso.pruebas)) {
+    // Abrirla con la salida de emergencia no cuenta como haber cumplido.
+    if (prueba.saltada) continue
+    lista.push({
+      at: prueba.at,
+      concepto: 'Cumpliste lo que pedía',
+      detalle: titulo(id),
+      creditos: ECONOMIA.prueba,
+    })
+  }
+
+  for (const [id, sorteos] of Object.entries(progreso.sorteos)) {
+    for (const sorteo of sorteos) {
+      if (!sorteo.hechoAt) continue
+      lista.push({
+        at: sorteo.hechoAt,
+        concepto: 'Hiciste un plan del bombo',
+        detalle: carta(id)?.bombo?.find((p) => p.id === sorteo.planId)?.plan,
+        creditos: ECONOMIA.plan,
+      })
+    }
+  }
+
+  for (const tirada of Object.values(progreso.tiradas ?? {})) {
+    lista.push({
+      at: tirada.at,
+      concepto: 'Tirada de la ruleta',
+      detalle: `salió la ${tirada.casilla}`,
+      creditos: -ECONOMIA.tirada,
+    })
+  }
+
+  return lista.sort((a, b) => (a.at < b.at ? 1 : -1))
+}
+
 export type Cuenta = {
   /** Lo que puede gastar ahora mismo. */
   saldo: number
@@ -64,49 +153,29 @@ export type Cuenta = {
   tiradasListas: number
   /** Cuánto le falta para la siguiente tirada (0 si ya puede). */
   faltan: number
-  detalle: { concepto: string; creditos: number }[]
 }
 
-export function contar(progreso: Progreso, cartas: Carta[]): Cuenta {
-  const dias = Object.keys(progreso.dias ?? {}).sort()
+export function contar(progreso: Progreso, cartas: Carta[], historial?: Movimiento[]): Cuenta {
+  const lista = historial ?? movimientos(progreso, cartas)
+  const ganado = lista.filter((m) => m.creditos > 0).reduce((t, m) => t + m.creditos, 0)
+  const gastado = -lista.filter((m) => m.creditos < 0).reduce((t, m) => t + m.creditos, 0)
+  const saldo = Math.max(0, ganado - gastado)
 
+  const dias = Object.keys(progreso.dias ?? {}).sort()
   let racha = 0
-  let porVisitas = 0
-  let ultimoDia = 0
   for (let i = 0; i < dias.length; i++) {
     racha = i > 0 && esElDiaSiguiente(dias[i - 1], dias[i]) ? racha + 1 : 1
-    ultimoDia = valorDelDia(racha)
-    porVisitas += ultimoDia
   }
-
-  const esMisterio = new Set(cartas.filter((c) => c.tipo === 'misterio').map((c) => c.id))
-  const abiertas = Object.keys(progreso.opened).filter((id) => !esMisterio.has(id)).length
-  const pruebas = Object.keys(progreso.pruebas).length
-  const planes = Object.values(progreso.sorteos)
-    .flat()
-    .filter((s) => s.hechoAt).length
-
-  const detalle = [
-    { concepto: `${dias.length} ${dias.length === 1 ? 'día' : 'días'} por aquí`, creditos: porVisitas },
-    { concepto: `${abiertas} ${abiertas === 1 ? 'carta abierta' : 'cartas abiertas'}`, creditos: abiertas * ECONOMIA.carta },
-    { concepto: `${pruebas} ${pruebas === 1 ? 'prueba cumplida' : 'pruebas cumplidas'}`, creditos: pruebas * ECONOMIA.prueba },
-    { concepto: `${planes} ${planes === 1 ? 'plan hecho' : 'planes hechos'}`, creditos: planes * ECONOMIA.plan },
-  ]
-  if (progreso.tutorialAt) detalle.unshift({ concepto: 'De bienvenida', creditos: ECONOMIA.bienvenida })
-
-  const ganado = detalle.reduce((t, x) => t + x.creditos, 0)
-  const gastado = Object.keys(progreso.tiradas ?? {}).length * ECONOMIA.tirada
-  const saldo = Math.max(0, ganado - gastado)
+  const hoyEsta = dias.length > 0 && dias[dias.length - 1] === hoy()
 
   return {
     saldo,
     ganado,
     gastado,
-    racha: dias.length && dias[dias.length - 1] === hoy() ? racha : 0,
-    hoy: dias.length && dias[dias.length - 1] === hoy() ? ultimoDia : 0,
+    racha: hoyEsta ? racha : 0,
+    hoy: hoyEsta ? valorDelDia(racha) : 0,
     tiradasListas: Math.floor(saldo / ECONOMIA.tirada),
     faltan: saldo >= ECONOMIA.tirada ? 0 : ECONOMIA.tirada - saldo,
-    detalle: detalle.filter((x) => x.creditos > 0),
   }
 }
 
