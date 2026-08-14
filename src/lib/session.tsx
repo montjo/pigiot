@@ -52,6 +52,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setCartas(abiertas)
       setClave(k)
       setModoRevision(revision)
+      // Revisión es un ensayo con la contraseña de revisión: se empieza de cero
+      // y nada sale de esta pestaña. Con el modo efímero puesto, el progreso sí
+      // avanza en memoria —la ruleta tacha casillas, el regalo desaparece, las
+      // cartas ganadas aparecen— sin tocar ni el aparato ni la nube.
+      modoEfimero(ENSAYO || revision)
       if (revision) {
         fijar(PROGRESO_VACIO)
         setStatus('abierto')
@@ -142,16 +147,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const abrir = useCallback(
     (cartaId: string) => {
-      if (!modoRevision) fijar(marcarAbierta(id, ref.current, cartaId))
+      fijar(marcarAbierta(id, ref.current, cartaId))
     },
-    [id, fijar, modoRevision],
+    [id, fijar],
   )
 
   const aportarPrueba = useCallback(
     (cartaId: string, datos: { fotoId?: string; lineas?: string[]; saltada?: boolean }) => {
-      if (!modoRevision) fijar(guardarPrueba(id, ref.current, cartaId, datos))
+      fijar(guardarPrueba(id, ref.current, cartaId, datos))
     },
-    [id, fijar, modoRevision],
+    [id, fijar],
   )
 
   const girarBombo = useCallback(
@@ -161,17 +166,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       const quedan = planesDisponibles(carta, ref.current)
       if (!quedan.length) return null
       const elegido = quedan[Math.floor(Math.random() * quedan.length)]
-      if (!modoRevision) fijar(guardarSorteo(id, ref.current, cartaId, elegido.id))
+      fijar(guardarSorteo(id, ref.current, cartaId, elegido.id))
       return elegido
     },
-    [cartas, id, fijar, modoRevision],
+    [cartas, id, fijar],
   )
 
   const planHecho = useCallback(
     (cartaId: string, planId: string) => {
-      if (!modoRevision) fijar(marcarPlanHecho(id, ref.current, cartaId, planId))
+      fijar(marcarPlanHecho(id, ref.current, cartaId, planId))
     },
-    [id, fijar, modoRevision],
+    [id, fijar],
   )
 
   /**
@@ -190,13 +195,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       casilla: elegida.n,
       cartaId: elegida.cartaId!,
     }
-    if (!modoRevision) fijar(guardarTirada(id, ref.current, tirada))
+    fijar(guardarTirada(id, ref.current, tirada))
     return tirada
   }, [cartas, id, fijar, modoRevision])
 
   const tutorialVisto = useCallback(() => {
-    if (!modoRevision) fijar(marcarTutorial(id, ref.current))
-  }, [id, fijar, modoRevision])
+    fijar(marcarTutorial(id, ref.current))
+  }, [id, fijar])
 
   const value = useMemo<SessionState>(
     () => ({

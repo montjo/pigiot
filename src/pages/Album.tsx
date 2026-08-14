@@ -115,7 +115,7 @@ function Visor({
 }
 
 export default function Album() {
-  const { status, clave } = useSession()
+  const { status, clave, modoRevision } = useSession()
   const [fotos, setFotos] = useState<FotoAlbum[]>([])
   const [cursor, setCursor] = useState<unknown | null>(null)
   const [hayMas, setHayMas] = useState(true)
@@ -129,7 +129,10 @@ export default function Album() {
 
   const siguienteTanda = useCallback(
     async (desde?: unknown) => {
-      if (!clave) return
+      // En revisión la clave es la de la contraseña de revisión, y las fotos
+      // están cifradas con la suya: no hay nada que descifrar. Sin esta salida
+      // se pedirían todas las tandas del álbum para tirarlas una por una.
+      if (!clave || modoRevision) return
       setCargando(true)
       try {
         const pagina = await cargarPagina(clave, POR_TANDA, desde)
@@ -148,12 +151,12 @@ export default function Album() {
         setCargando(false)
       }
     },
-    [clave],
+    [clave, modoRevision],
   )
 
   // Primera tanda: el ancla primero, que es la foto que abre todo esto.
   useEffect(() => {
-    if (!clave) return
+    if (!clave || modoRevision) return
     let vivo = true
     cargarAncla(clave)
       .then((ancla) => {
@@ -166,7 +169,7 @@ export default function Album() {
     return () => {
       vivo = false
     }
-  }, [clave, siguienteTanda])
+  }, [clave, modoRevision, siguienteTanda])
 
   useEffect(() => () => urls.current.forEach((u) => URL.revokeObjectURL(u)), [])
 
@@ -228,21 +231,31 @@ export default function Album() {
           cifradas: sin tu contraseña no hay forma de verlas.
         </p>
 
-        <label className="album__subir">
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            disabled={Boolean(subiendo)}
-            onChange={(e) => {
-              if (e.target.files?.length) void subir(e.target.files)
-              e.target.value = ''
-            }}
-          />
-          <span>{subiendo ? `Subiendo ${subiendo.va} de ${subiendo.de}…` : 'Añadir fotos'}</span>
-        </label>
+        {!modoRevision && (
+          <label className="album__subir">
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              disabled={Boolean(subiendo)}
+              onChange={(e) => {
+                if (e.target.files?.length) void subir(e.target.files)
+                e.target.value = ''
+              }}
+            />
+            <span>{subiendo ? `Subiendo ${subiendo.va} de ${subiendo.de}…` : 'Añadir fotos'}</span>
+          </label>
+        )}
         {fallo && <p className="error">{fallo}</p>}
       </header>
+
+      {modoRevision && (
+        <p className="estado-vacio">
+          Aquí no se ven las fotos. Están cifradas con <strong>su</strong> contraseña, y en
+          revisión estás usando la vuestra: son claves distintas y no hay manera de abrirlas.
+          Para verlas hay que entrar con la suya.
+        </p>
+      )}
 
       {fotos.length > 0 ? (
         <ul className="album">
@@ -256,10 +269,9 @@ export default function Album() {
           ))}
         </ul>
       ) : (
-        !cargando && (
-          <p className="estado-vacio">
-            Todavía no hay ninguna. Empieza tú: dale a «añadir fotos».
-          </p>
+        !cargando &&
+        !modoRevision && (
+          <p className="estado-vacio">Todavía no hay ninguna. Empieza tú: dale a «añadir fotos».</p>
         )
       )}
 

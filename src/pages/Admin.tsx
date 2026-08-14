@@ -15,9 +15,11 @@ const dias = (iso: string) => Math.floor((Date.now() - new Date(iso).getTime()) 
 
 /** Las fotos que ha ido subiendo, descifradas con la clave de las cartas. */
 function Fotos({ clave }: { clave: CryptoKey }) {
+  const { modoRevision } = useSession()
   const [fotos, setFotos] = useState<FotoAlbum[] | null>(null)
 
   useEffect(() => {
+    if (modoRevision) return
     let vivo = true
     let urls: string[] = []
     cargarFotos(clave)
@@ -37,7 +39,22 @@ function Fotos({ clave }: { clave: CryptoKey }) {
       vivo = false
       urls.forEach((u) => URL.revokeObjectURL(u))
     }
-  }, [clave])
+  }, [clave, modoRevision])
+
+  // Con la contraseña de revisión la clave es otra: sus fotos están cifradas con
+  // la suya y no se pueden abrir desde aquí. Antes esta sección desaparecía sin
+  // más, y parecía que no hubiera fotos.
+  if (modoRevision) {
+    return (
+      <section className="diario">
+        <h2>Sus fotos</h2>
+        <p className="apagado">
+          No se pueden ver en modo revisión: van cifradas con <strong>su</strong> contraseña, no
+          con la de revisión. Hay que entrar con la suya para verlas.
+        </p>
+      </section>
+    )
+  }
 
   if (!fotos?.length) return null
 

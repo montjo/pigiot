@@ -525,8 +525,23 @@ function Voces({ carta }: { carta: Carta }) {
   const [i, setI] = useState(0)
   const voces = carta.voces!
   const voz = voces[i]
+  const caja = useRef<HTMLElement>(null)
+  /** En la primera pintada no se toca el scroll: se está leyendo lo de arriba. */
+  const yaEstaba = useRef(false)
+
+  // Al cambiar de voz, el texto nuevo empieza donde acaba el botón que acabas de
+  // pulsar, o sea fuera de la pantalla. Se sube al principio del texto.
+  useEffect(() => {
+    if (!yaEstaba.current) {
+      yaEstaba.current = true
+      return
+    }
+    const quieto = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    caja.current?.scrollIntoView({ behavior: quieto ? 'auto' : 'smooth', block: 'start' })
+  }, [i])
+
   return (
-    <section className="voces">
+    <section className="voces" ref={caja}>
       <nav className="voces__nav">
         {voces.map((v, n) => (
           <button

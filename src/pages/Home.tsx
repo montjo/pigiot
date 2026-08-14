@@ -289,7 +289,12 @@ export default function Home() {
   if (status === 'bloqueado') return <Puerta />
 
   // Las de misterio solo salen aquí si ya le han tocado en la ruleta.
-  const visibles = cartasVisibles(cartasDelMazo(cartas, progreso), progreso, new Date(), modoRevision)
+  const visibles = cartasVisibles(
+    cartasDelMazo(cartas, progreso, modoRevision),
+    progreso,
+    new Date(),
+    modoRevision,
+  )
   const conEstado = visibles.map((c) => ({ carta: c, estado: estadoDeCarta(c, progreso, new Date(), modoRevision) }))
   const paraAbrir = conEstado.filter(
     (x) => x.estado === 'cerrada' || x.estado === 'pide-prueba' || x.estado === 'a-medias',

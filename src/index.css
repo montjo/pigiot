@@ -1136,6 +1136,8 @@ ul.diario {
 
 .voces {
   margin: 1.8rem 0;
+  /* Al saltar de una voz a la siguiente no queda pegado al borde de arriba. */
+  scroll-margin-top: 1rem;
 }
 
 .voces__nav {
