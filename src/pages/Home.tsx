@@ -310,6 +310,9 @@ export default function Home() {
         <div className="cabecera__barra">
           <p className="cabecera__marca">Para Pigi</p>
           <nav className="cabecera__acciones" aria-label="Acciones">
+            <Link to="/album" className="enlace">
+              Álbum
+            </Link>
             <Link to="/como-va" className="enlace">
               Cómo va esto
             </Link>

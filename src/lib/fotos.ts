@@ -153,6 +153,52 @@ export async function cargarMiniatura(clave: CryptoKey, id: string): Promise<Fot
   return aFoto(clave, id, snap.data() as FilaFoto)
 }
 
+/** Una tanda del álbum, con el cursor para pedir la siguiente. */
+export type Pagina = {
+  fotos: FotoAlbum[]
+  /** Se lo pasas a la siguiente llamada. null cuando no queda nada. */
+  cursor: unknown | null
+  hayMas: boolean
+}
+
+/**
+ * El álbum se lee por tandas: nunca se pide la colección entera. Cada tanda son
+ * N miniaturas ordenadas de la más nueva a la más vieja, y la grande solo se
+ * baja al ampliar una foto.
+ */
+export async function cargarPagina(
+  clave: CryptoKey,
+  cuantas = 24,
+  cursor?: unknown,
+): Promise<Pagina> {
+  const db = await getDb()
+  if (!db) return { fotos: [], cursor: null, hayMas: false }
+  const { collection, getDocs, limit, orderBy, query, startAfter } = await import('firebase/firestore')
+  const base = [collection(db, 'photos'), orderBy('at', 'desc')] as const
+  const consulta = cursor
+    ? query(base[0], base[1], startAfter(cursor), limit(cuantas))
+    : query(base[0], base[1], limit(cuantas))
+  const snap = await getDocs(consulta)
+  const fotos = await Promise.all(snap.docs.map((d) => aFoto(clave, d.id, d.data() as FilaFoto)))
+  return {
+    fotos: fotos.filter((f) => f.url),
+    cursor: snap.docs[snap.docs.length - 1] ?? null,
+    hayMas: snap.docs.length === cuantas,
+  }
+}
+
+/** La que abre la colección: la foto de la primera carta, si ya existe. */
+export async function cargarAncla(clave: CryptoKey): Promise<FotoAlbum | null> {
+  const db = await getDb()
+  if (!db) return null
+  const { collection, getDocs, limit, query, where } = await import('firebase/firestore')
+  const snap = await getDocs(query(collection(db, 'photos'), where('ancla', '==', true), limit(1)))
+  const doc = snap.docs[0]
+  if (!doc) return null
+  const foto = await aFoto(clave, doc.id, doc.data() as FilaFoto)
+  return foto.url ? foto : null
+}
+
 /** Todas, de la más nueva a la más vieja. Para el panel y para el álbum. */
 export async function cargarFotos(clave: CryptoKey): Promise<FotoAlbum[]> {
   const db = await getDb()

@@ -2008,6 +2008,236 @@ ul.diario {
   line-height: 1.5;
 }
 
+/* --- El álbum --------------------------------------------------------------- */
+
+.album__cabecera {
+  margin-bottom: 1.3rem;
+  color: rgba(255, 247, 232, 0.92);
+}
+
+.album__cabecera h1 {
+  margin-bottom: 0.5rem;
+}
+
+.album__eti {
+  margin: 0 0 0.3rem;
+  color: var(--oro);
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 840;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.album__cabecera .apagado,
+.album__final .apagado {
+  color: rgba(255, 247, 232, 0.62);
+}
+
+.album__subir {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  cursor: pointer;
+}
+
+.album__subir input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.album__subir span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 46px;
+  padding: 0.6rem 1.05rem;
+  border: 1px solid rgba(180, 137, 77, 0.5);
+  border-radius: var(--radio-sm);
+  background: rgba(180, 137, 77, 0.16);
+  color: var(--oro);
+  font-family: var(--sans);
+  font-size: 0.94rem;
+  font-weight: 780;
+}
+
+.album__subir input:disabled + span {
+  opacity: 0.6;
+}
+
+.album {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.album li {
+  margin: 0;
+  padding: 0;
+}
+
+.album button {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+  border: 1px solid rgba(255, 247, 232, 0.16);
+  border-radius: var(--radio-sm);
+  background: rgba(255, 247, 232, 0.06);
+  box-shadow: none;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.album img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+
+/* La foto de la primera carta ocupa el doble: es la que abre todo esto. */
+.album .es-ancla {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
+.album .es-ancla button {
+  border-color: rgba(180, 137, 77, 0.7);
+}
+
+.album__ancla {
+  position: absolute;
+  bottom: 0.4rem;
+  left: 0.4rem;
+  padding: 0.14rem 0.44rem;
+  border-radius: 999px;
+  background: var(--oro);
+  color: #241703;
+  font-family: var(--sans);
+  font-size: 0.66rem;
+  font-weight: 840;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.album__final {
+  min-height: 3rem;
+  margin-top: 1.2rem;
+  text-align: center;
+}
+
+@media (hover: hover) {
+  .album button:hover {
+    border-color: rgba(180, 137, 77, 0.8);
+    transform: none;
+  }
+}
+
+/* El visor a pantalla completa. */
+.visor {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  padding: 3.2rem 0.8rem 0.8rem;
+  background: rgba(4, 12, 12, 0.96);
+  backdrop-filter: blur(6px);
+  animation: aparecer 0.2s ease both;
+}
+
+.visor__marco {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 0;
+}
+
+.visor__foto {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: var(--radio-sm);
+  object-fit: contain;
+}
+
+.visor__cargando {
+  position: absolute;
+  margin: 0;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(4, 12, 12, 0.7);
+  color: rgba(255, 247, 232, 0.8);
+  font-family: var(--sans);
+  font-size: 0.78rem;
+}
+
+.visor__pie {
+  padding: 0.9rem 0.2rem 0.2rem;
+  color: rgba(255, 247, 232, 0.9);
+  text-align: center;
+}
+
+.visor__texto {
+  margin: 0 0 0.25rem;
+  font-size: 1.02rem;
+}
+
+.visor__fecha {
+  margin: 0;
+  color: rgba(255, 247, 232, 0.55);
+  font-family: var(--sans);
+  font-size: 0.8rem;
+}
+
+.visor__cerrar,
+.visor__flecha {
+  position: absolute;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0;
+  border: 1px solid rgba(255, 247, 232, 0.28);
+  border-radius: 999px;
+  background: rgba(255, 247, 232, 0.12);
+  color: rgba(255, 247, 232, 0.92);
+  font-family: var(--sans);
+  font-size: 1.1rem;
+  line-height: 1;
+  box-shadow: none;
+}
+
+.visor__cerrar {
+  top: 0.8rem;
+  right: 0.8rem;
+}
+
+.visor__flecha {
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.7rem;
+}
+
+.visor__flecha--antes { left: 0.6rem; }
+.visor__flecha--despues { right: 0.6rem; }
+
+@media (hover: hover) {
+  .visor__cerrar:hover,
+  .visor__flecha:hover {
+    background: rgba(255, 247, 232, 0.22);
+    box-shadow: none;
+  }
+
+  .visor__flecha:hover {
+    transform: translateY(-50%);
+  }
+}
+
 /* --- El falso «¡has ganado un iPhone!» ------------------------------------- */
 /* A propósito feo y fuera de sitio: toda la gracia está en que no pega nada
    con el resto de la web. Arial y colores de banner de 2009. */

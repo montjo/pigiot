@@ -34,6 +34,9 @@ const MIME = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png',
 const avisos = []
 const aviso = (m) => avisos.push(m)
 
+/** Cuánto de lo que se cifra son fotos: cada KB de foto son ~3,5 KB de paquete. */
+const fotos = { cuantas: 0, bytes: 0 }
+
 function morir(mensaje) {
   console.error(`\n✗ ${mensaje}\n`)
   process.exit(1)
@@ -132,7 +135,7 @@ async function leerBombo(nombre, fichero) {
 }
 
 async function leerFotos(lista, fichero) {
-  const fotos = []
+  const lista_fotos = []
   for (const entrada of lista) {
     const [nombre, ...resto] = entrada.split('|')
     const url = new URL(nombre.trim(), DIR_FOTOS)
@@ -153,12 +156,14 @@ async function leerFotos(lista, fichero) {
     if (bytes.length > 500_000) {
       aviso(`la foto "${nombre.trim()}" pesa ${Math.round(bytes.length / 1000)} KB, conviene bajarla`)
     }
-    fotos.push({
+    fotos.cuantas++
+    fotos.bytes += bytes.length
+    lista_fotos.push({
       src: `data:${tipo};base64,${bytes.toString('base64')}`,
       pie: resto.join('|').trim() || undefined,
     })
   }
-  return fotos
+  return lista_fotos
 }
 
 async function leerCartas() {
@@ -285,8 +290,23 @@ async function contrasenaRevision() {
   return v
 }
 
-async function cifrar(cartas, clave) {
-  const salt = crypto.getRandomValues(new Uint8Array(16))
+/**
+ * Se conserva SIEMPRE, como el progressId. La clave con la que se cifran las
+ * fotos del álbum sale de la contraseña MÁS esta sal: si la sal cambia, todas
+ * las fotos que ya estén subidas quedan ilegibles para siempre, y no hay vuelta
+ * atrás. Va en claro dentro del paquete, así que reutilizarla no destapa nada.
+ */
+async function salEstable() {
+  try {
+    const previo = JSON.parse(await readFile(SALIDA, 'utf8'))
+    if (previo.kdf?.salt) return new Uint8Array(Buffer.from(previo.kdf.salt, 'base64'))
+  } catch {
+    // Primera vez.
+  }
+  return crypto.getRandomValues(new Uint8Array(16))
+}
+
+async function cifrar(cartas, clave, salt) {
   const iv = crypto.getRandomValues(new Uint8Array(12))
   const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(clave), 'PBKDF2', false, [
     'deriveKey',
@@ -358,12 +378,13 @@ try {
   // Opcional.
 }
 
+const sal = await salEstable()
 const bundle = {
   v: 2,
   progressId: await progressIdEstable(),
   pista,
-  ...(await cifrar(cartas, clave)),
-  revision: await cifrar(cartas, claveRevision),
+  ...(await cifrar(cartas, clave, sal)),
+  revision: await cifrar(cartas, claveRevision, sal),
 }
 
 const json = JSON.stringify(bundle)
@@ -374,6 +395,22 @@ if (mb > 8) aviso(`el fichero pesa ${mb.toFixed(1)} MB y lo descarga entero al e
 
 console.log(`\n✓ ${cartas.length} cartas cifradas (${mb < 1 ? Math.round(json.length / 1000) + ' KB' : mb.toFixed(1) + ' MB'})`)
 for (const c of cartas) console.log(`   ${c.tipo.padEnd(9)} ${c.id.padEnd(4)} ${c.titulo}`)
+
+if (fotos.cuantas) {
+  // El paquete lleva las cartas cifradas dos veces (la suya y la de revisión) y
+  // todo pasa por base64 dos veces: cada foto acaba pesando ~3,5 veces su peso.
+  const kb = Math.round(fotos.bytes / 1024)
+  console.log(
+    `\n  ${fotos.cuantas} ${fotos.cuantas === 1 ? 'foto' : 'fotos'}: ${kb} KB de ficheros, ` +
+      `unos ${Math.round((fotos.bytes * 3.5) / 1024)} KB del paquete.`,
+  )
+  if (json.length > 4_000_000) {
+    aviso(
+      'el paquete pasa de 4 MB y eso lo descarga su móvil entero. Comprime las fotos:\n' +
+        '     sips -Z 1280 -s format jpeg -s formatOptions 40 foto.jpg --out content/fotos/foto.jpg',
+    )
+  }
+}
 if (avisos.length) {
   console.log('\n  Avisos:')
   for (const a of avisos) console.log(`   · ${a}`)

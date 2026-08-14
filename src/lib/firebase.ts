@@ -20,11 +20,25 @@ export function getDb(): Promise<Firestore | null> {
   if (!isFirebaseConfigured) return Promise.resolve(null)
   if (!pending) {
     pending = (async () => {
-      const [{ initializeApp }, { getFirestore }] = await Promise.all([
+      const [{ getApp, getApps, initializeApp }, firestore] = await Promise.all([
         import('firebase/app'),
         import('firebase/firestore'),
       ])
-      return getFirestore(initializeApp(config))
+      const { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } =
+        firestore
+      const app = getApps().length ? getApp() : initializeApp(config)
+      try {
+        // Caché persistente: el álbum es lo único que baja peso de la red, y así
+        // las fotos ya vistas salen al instante, sin gastar tráfico y sin cobertura.
+        return initializeFirestore(app, {
+          localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+        })
+      } catch (error) {
+        // Ya estaba arrancado (recarga en caliente, o dos entradas al mismo
+        // proyecto). Se reutiliza el que hay en vez de tirar la conexión.
+        console.warn('Firestore ya estaba arrancado, se reutiliza.', error)
+        return getFirestore(app)
+      }
     })().catch((error) => {
       console.warn('No se pudo inicializar Firebase.', error)
       return null
