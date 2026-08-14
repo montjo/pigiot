@@ -22,7 +22,8 @@ const LADO_MINI = 400
 const TOPE_GRANDE = 760_000
 const TOPE_MINI = 130_000
 
-export type MetaFoto = { cartaId?: string; pie?: string }
+/** `de` solo lo rellena el script del álbum: dice quién mandó la foto. */
+export type MetaFoto = { cartaId?: string; pie?: string; de?: string }
 
 async function aBitmap(archivo: File): Promise<ImageBitmap> {
   try {

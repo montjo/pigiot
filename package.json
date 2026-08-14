@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "letters": "node scripts/cartas.mjs",
+    "album": "node scripts/album.mjs",
     "hash": "node scripts/hash-password.mjs",
     "build": "tsc -b && vite build",
     "lint": "oxlint",

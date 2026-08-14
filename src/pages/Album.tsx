@@ -85,6 +85,7 @@ function Visor({
         {foto.meta?.pie && <p className="visor__texto">{foto.meta.pie}</p>}
         <p className="visor__fecha">
           {formatearFecha(foto.at)}
+          {foto.meta?.de && ` · la mandó ${foto.meta.de}`}
           {foto.meta?.cartaId && ' · de una carta'}
         </p>
       </div>

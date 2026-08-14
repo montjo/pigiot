@@ -54,13 +54,42 @@ function escribirLocal(progressId: string, progreso: Progreso) {
  * las reglas son de solo añadir a propósito, así que eso se hace en la consola
  * de Firebase. Sirve para dejar un dispositivo como nuevo antes de entregarlo.
  */
-export function olvidarLocal(progressId: string) {
+export async function olvidarLocal(progressId: string) {
   try {
     localStorage.removeItem(localKey(progressId))
     localStorage.removeItem('pigiot:ha-entrado')
   } catch {
     // Modo privado: no había nada que borrar.
   }
+
+  // La caché de Firestore guarda una copia del documento en IndexedDB. Si no se
+  // vacía, la web sigue viendo las aperturas de antes aunque el documento ya no
+  // exista en la nube, y encima las vuelve a subir. Hay que cerrar la conexión
+  // antes de vaciarla: es lo único que puede borrar esa copia.
+  try {
+    const db = await getDb()
+    if (db) {
+      const { clearIndexedDbPersistence, terminate } = await import('firebase/firestore')
+      await terminate(db)
+      await clearIndexedDbPersistence(db)
+    }
+  } catch (error) {
+    console.warn('No se ha podido vaciar la caché de Firestore.', error)
+  }
+
+  // Firestore deja rastro en localStorage y escribe alguno más al cerrarse, así
+  // que este barrido va al final, cuando ya no queda nadie escribiendo.
+  try {
+    for (const k of Object.keys(localStorage)) {
+      if (k.startsWith('firestore_')) localStorage.removeItem(k)
+    }
+  } catch {
+    // Modo privado.
+  }
+
+  // Y la clave guardada, para que vuelva a pedir la contraseña como el primer día.
+  const { olvidarClave } = await import('./llavero')
+  await olvidarClave()
 }
 
 /** Se queda con la fecha más antigua de cada apertura y une el resto de mapas. */

@@ -63,26 +63,30 @@ function Fotos({ clave }: { clave: CryptoKey }) {
  */
 function OlvidarDispositivo({ progressId }: { progressId: string }) {
   const [seguro, setSeguro] = useState(false)
+  const [borrando, setBorrando] = useState(false)
 
   return (
     <section className="diario">
       <h2>Dejar este aparato como nuevo</h2>
       <p className="apagado">
         Borra la copia que hay en <strong>este</strong> navegador: aperturas, pruebas, días,
-        tiradas y la intro. La copia de la nube no se puede borrar desde aquí; eso se hace en la
-        consola de Firebase, y hay que hacerlo <strong>después</strong> de esto, porque si no la
-        web vuelve a subir lo de aquí al abrirse.
+        tiradas, la intro, la caché de la nube y la contraseña guardada. La copia de la nube no se
+        puede borrar desde aquí; eso se hace en la consola de Firebase, y hay que hacerlo{' '}
+        <strong>después</strong> de esto, porque si no la web vuelve a subir lo de aquí al abrirse.
       </p>
       {seguro ? (
         <>
           <button
             type="button"
+            disabled={borrando}
             onClick={() => {
-              olvidarLocal(progressId)
-              window.location.reload()
+              setBorrando(true)
+              // Se espera a que termine: si se recarga antes, la caché de
+              // Firestore se queda a medias y vuelven a salir las aperturas.
+              void olvidarLocal(progressId).finally(() => window.location.reload())
             }}
           >
-            Sí, bórralo de este aparato
+            {borrando ? 'Borrando…' : 'Sí, bórralo de este aparato'}
           </button>
           <button type="button" className="enlace" onClick={() => setSeguro(false)}>
             mejor no
