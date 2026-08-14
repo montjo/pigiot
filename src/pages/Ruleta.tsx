@@ -237,7 +237,9 @@ export default function Ruleta() {
 
       {gastadas > 0 && (
         <p className="apagado ruleta__gastadas">
-          Las {gastadas === 1 ? 'casilla tachada ya salió' : `${gastadas} casillas tachadas ya salieron`}: no pueden repetirse.
+          {gastadas === 1
+            ? 'La casilla tachada ya salió: no puede repetirse.'
+            : `Las ${gastadas} casillas tachadas ya salieron: no pueden repetirse.`}
         </p>
       )}
 

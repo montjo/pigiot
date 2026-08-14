@@ -186,9 +186,10 @@ export type Casilla = {
 }
 
 /**
- * Doce casillas de color y las dos verdes enfrentadas, como en la de verdad
- * pero sin 38 huecos ilegibles en un móvil. Si algún día hay más cartas de
- * misterio que casillas, se alarga esta lista y ya está.
+ * Una casilla por carta de misterio: ocho de color (cuatro rojas y cuatro
+ * negras) y las dos verdes enfrentadas, como en la de verdad. Si algún día hay
+ * más cartas que casillas, se alargan las dos mitades por igual para que las
+ * verdes sigan cayendo una frente a la otra.
  */
 const RUEDA: { n: string; color: ColorCasilla }[] = [
   { n: '0', color: 'verde' },
@@ -196,15 +197,11 @@ const RUEDA: { n: string; color: ColorCasilla }[] = [
   { n: '2', color: 'negro' },
   { n: '3', color: 'rojo' },
   { n: '4', color: 'negro' },
+  { n: '00', color: 'verde' },
   { n: '5', color: 'rojo' },
   { n: '6', color: 'negro' },
-  { n: '00', color: 'verde' },
   { n: '7', color: 'rojo' },
   { n: '8', color: 'negro' },
-  { n: '9', color: 'rojo' },
-  { n: '10', color: 'negro' },
-  { n: '11', color: 'rojo' },
-  { n: '12', color: 'negro' },
 ]
 
 /**
