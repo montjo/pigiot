@@ -102,7 +102,10 @@ export function movimientos(progreso: Progreso, cartas: Carta[]): Movimiento[] {
     })
   })
 
+  const regalo = cartaDelRegalo(cartas)?.id
   for (const [id, apertura] of Object.entries(progreso.opened)) {
+    // El señuelo del premio no cuenta como carta: ni suma ni aparece.
+    if (id === regalo) continue
     const misterio = esMisterio(id)
     lista.push({
       at: apertura.at,
@@ -186,10 +189,9 @@ export type Casilla = {
 }
 
 /**
- * Una casilla por carta de misterio: ocho de color (cuatro rojas y cuatro
- * negras) y las dos verdes enfrentadas, como en la de verdad. Si algún día hay
- * más cartas que casillas, se alargan las dos mitades por igual para que las
- * verdes sigan cayendo una frente a la otra.
+ * La rueda de siempre: ocho casillas de color y las dos verdes enfrentadas. Si
+ * algún día hay más cartas de misterio que casillas, se alargan las dos mitades
+ * por igual para que las verdes sigan cayendo una frente a la otra.
  */
 const RUEDA: { n: string; color: ColorCasilla }[] = [
   { n: '0', color: 'verde' },
@@ -204,6 +206,10 @@ const RUEDA: { n: string; color: ColorCasilla }[] = [
   { n: '8', color: 'negro' },
 ]
 
+/** Dónde se cuela la casilla del regalo mientras existe: a un cuarto de vuelta. */
+const HUECO_REGALO = 3
+const CASILLA_REGALO: { n: string; color: ColorCasilla } = { n: '🎁', color: 'regalo' }
+
 /**
  * Reparte las cartas de misterio por la rueda. El orden es el de sus ids, para
  * que una carta no cambie de casilla al añadir otra más adelante.
@@ -211,11 +217,18 @@ const RUEDA: { n: string; color: ColorCasilla }[] = [
 export function casillas(cartas: Carta[], progreso: Progreso): Casilla[] {
   const misterios = cartas.filter((c) => c.tipo === 'misterio').sort((a, b) => (a.id < b.id ? -1 : 1))
   const verdes = misterios.filter((c) => c.casilla === 'verde')
-  const resto = misterios.filter((c) => c.casilla !== 'verde')
+  const resto = misterios.filter((c) => c.casilla !== 'verde' && c.casilla !== 'regalo')
   const usadas = new Set(Object.values(progreso.tiradas ?? {}).map((t) => t.cartaId))
 
-  return RUEDA.map((hueco) => {
-    const carta = hueco.color === 'verde' ? verdes.shift() : resto.shift()
+  // El regalo solo ocupa sitio mientras siga dentro. Una vez sale, su casilla
+  // no vuelve a la rueda: era única y se ha gastado.
+  const regalo = misterios.find((c) => c.casilla === 'regalo' && !usadas.has(c.id))
+  const huecos = [...RUEDA]
+  if (regalo) huecos.splice(HUECO_REGALO, 0, CASILLA_REGALO)
+
+  return huecos.map((hueco) => {
+    const carta =
+      hueco.color === 'regalo' ? regalo : hueco.color === 'verde' ? verdes.shift() : resto.shift()
     return {
       ...hueco,
       cartaId: carta?.id,
@@ -232,6 +245,16 @@ export function casillasVivas(lista: Casilla[]): Casilla[] {
 /** Lo que pesa una casilla en el sorteo. Las verdes, menos: son las raras. */
 export function peso(casilla: Casilla): number {
   return casilla.color === 'verde' ? ECONOMIA.pesoVerde : 1
+}
+
+/**
+ * La primera tirada de su vida no es al azar: si la casilla del regalo sigue
+ * con carta, sale esa. Es el único giro amañado que hay, y está para que el
+ * regalo de verdad se lo dé la rueda delante de todos.
+ */
+export function casillaDeSalida(lista: Casilla[], progreso: Progreso): Casilla | null {
+  if (Object.keys(progreso.tiradas ?? {}).length > 0) return null
+  return casillasVivas(lista).find((c) => c.color === 'regalo') ?? null
 }
 
 /**
@@ -259,6 +282,21 @@ export function opcionesDeVerde(vivas: Casilla[]): number {
 /** Las cartas de misterio que ya le han tocado, de la más nueva a la más vieja. */
 export function misteriosGanados(progreso: Progreso): Tirada[] {
   return Object.values(progreso.tiradas ?? {}).sort((a, b) => (a.at < b.at ? 1 : -1))
+}
+
+/**
+ * La carta de la casilla del regalo, si existe. No es una carta del mazo: es el
+ * señuelo del premio, y en cuanto se gasta no queda ni rastro de ella.
+ */
+export function cartaDelRegalo(cartas: Carta[]): Carta | null {
+  return cartas.find((c) => c.tipo === 'misterio' && c.casilla === 'regalo') ?? null
+}
+
+/** El premio que le tocó y todavía no ha reclamado, si lo hay. */
+export function premioSinReclamar(progreso: Progreso, cartas: Carta[]): Tirada | null {
+  const regalo = cartaDelRegalo(cartas)
+  if (!regalo || progreso.opened[regalo.id]) return null
+  return Object.values(progreso.tiradas ?? {}).find((t) => t.cartaId === regalo.id) ?? null
 }
 
 export function haSalido(progreso: Progreso, cartaId: string): boolean {

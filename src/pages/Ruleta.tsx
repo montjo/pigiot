@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { useSession } from '../lib/session-context'
 import { formatearFecha } from '../lib/estado'
@@ -8,9 +8,11 @@ import {
   casillas,
   casillasVivas,
   contar,
+  cartaDelRegalo,
   misteriosGanados,
   movimientos,
   opcionesDeVerde,
+  premioSinReclamar,
   type Casilla,
   type Cuenta,
   type Movimiento,
@@ -54,7 +56,11 @@ function Rueda({ lista, giro, girando }: { lista: Casilla[]; giro: number; giran
           ))}
           {lista.map((c, i) => (
             <g key={c.n} transform={`rotate(${i * ancho} 100 100)`}>
-              <text x="100" y="26" className={`rueda__n${c.usada ? ' es-usada' : ''}`}>
+              <text
+                x="100"
+                y="26"
+                className={`rueda__n${c.color === 'regalo' ? ' rueda__n--regalo' : ''}${c.usada ? ' es-usada' : ''}`}
+              >
                 {c.n}
               </text>
               {/* Las que ya salieron llevan su tachón: no pueden repetirse. */}
@@ -82,9 +88,11 @@ function Premio({ tirada, casilla }: { tirada: Tirada; casilla?: Casilla }) {
       <p className="premio__eti">Ha salido</p>
       <p className="premio__n">{tirada.casilla}</p>
       <p className="premio__que">
-        {casilla?.color === 'verde'
-          ? 'Verde. De estas hay dos en toda la rueda.'
-          : 'Hay una carta detrás de esa casilla.'}
+        {casilla?.color === 'regalo'
+          ? 'La casilla del regalo. Solo hay una en toda la rueda.'
+          : casilla?.color === 'verde'
+            ? 'Verde. De estas hay dos en toda la rueda.'
+            : 'Hay un premio detrás de esa casilla.'}
       </p>
       <Link to={`/carta/${tirada.cartaId}`} className="boton">
         Ver qué es
@@ -183,18 +191,32 @@ export default function Ruleta() {
   const [premio, setPremio] = useState<Tirada | null>(null)
   const temporizador = useRef<number>(undefined)
 
+  const rueda = useMemo(() => casillas(cartas, progreso), [cartas, progreso])
+  /**
+   * Lo que se dibuja. Mientras la rueda gira NO se toca: si no, la casilla que
+   * va a salir se tacharía a mitad del giro y le contaría el final antes de
+   * tiempo. Se pone al día justo cuando para.
+   */
+  const [pintada, setPintada] = useState(rueda)
+
+  useEffect(() => {
+    if (!girando && !premio) setPintada(rueda)
+  }, [rueda, girando, premio])
+
   useEffect(() => () => window.clearTimeout(temporizador.current), [])
 
   if (status === 'cargando') return <main className="pantalla pantalla--centro">…</main>
   if (status !== 'abierto') return <Navigate to="/" replace />
 
-  const lista = casillas(cartas, progreso)
+  const lista = pintada
   const historial = movimientos(progreso, cartas)
   const cuenta = contar(progreso, cartas, historial)
   const vivas = casillasVivas(lista)
   const verdes = Math.round(opcionesDeVerde(vivas) * 100)
   const gastadas = lista.filter((c) => c.usada).length
-  const ganados = misteriosGanados(progreso)
+  const regalo = cartaDelRegalo(cartas)
+  const ganados = misteriosGanados(progreso).filter((t) => t.cartaId !== regalo?.id)
+  const pendiente = premioSinReclamar(progreso, cartas)
   const puede = (modoRevision || cuenta.saldo >= ECONOMIA.tirada) && vivas.length > 0 && !girando
 
   function girar() {
@@ -269,6 +291,17 @@ export default function Ruleta() {
       </div>
 
       {premio && <Premio tirada={premio} casilla={lista.find((c) => c.n === premio.casilla)} />}
+
+      {!premio && !girando && pendiente && (
+        <section className="premio premio--regalo">
+          <p className="premio__eti">Te queda por reclamar</p>
+          <p className="premio__n">{pendiente.casilla}</p>
+          <p className="premio__que">Salió y no lo has reclamado. Sigue ahí.</p>
+          <Link to={`/carta/${pendiente.cartaId}`} className="boton">
+            Reclamar el premio
+          </Link>
+        </section>
+      )}
 
       {/* Mientras gira no se enseña: sería contarle el final antes de tiempo. */}
       {ganados.length > 0 && !premio && !girando && (

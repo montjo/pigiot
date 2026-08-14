@@ -49,6 +49,20 @@ function escribirLocal(progressId: string, progreso: Progreso) {
   }
 }
 
+/**
+ * Borra la copia de este aparato. La de la nube NO se puede borrar desde aquí:
+ * las reglas son de solo añadir a propósito, así que eso se hace en la consola
+ * de Firebase. Sirve para dejar un dispositivo como nuevo antes de entregarlo.
+ */
+export function olvidarLocal(progressId: string) {
+  try {
+    localStorage.removeItem(localKey(progressId))
+    localStorage.removeItem('pigiot:ha-entrado')
+  } catch {
+    // Modo privado: no había nada que borrar.
+  }
+}
+
 /** Se queda con la fecha más antigua de cada apertura y une el resto de mapas. */
 function fusionar(a: Progreso, b: Progreso): Progreso {
   const opened: Record<string, Apertura> = { ...a.opened }

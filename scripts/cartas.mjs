@@ -22,9 +22,11 @@ const ITERACIONES = 600_000
 
 const TIPOS = ['primera', 'normal', 'misterio', 'reto', 'aparte']
 /** Solo en las de misterio: en qué color de la ruleta cae. Ver src/lib/economia.ts. */
-const COLORES_CASILLA = ['rojo', 'negro', 'verde']
+const COLORES_CASILLA = ['rojo', 'negro', 'verde', 'regalo']
 /** Lo que puede pedir una prueba además de las preguntas. */
 const PIDE = ['foto']
+/** Cartas que no se pintan como el papel de siempre. Ver src/pages/LetterPage.tsx. */
+const PINTAS = ['estafa']
 /** Qué comprueba «ubicacion». `true` se queda por lo que ya estaba escrito. */
 const UBICACIONES = { true: 'fuera-de-espana', espana: 'fuera-de-espana', continente: 'otro-continente' }
 const MIME = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp' }
@@ -170,6 +172,8 @@ async function leerCartas() {
 
   const cartas = []
   const vistos = new Set()
+  /** Id de la carta del regalo, para que no haya dos peleándose por la casilla. */
+  let regalo = null
 
   for (const f of ficheros) {
     const texto = await readFile(new URL(f, DIR_CARTAS), 'utf8')
@@ -198,8 +202,21 @@ async function leerCartas() {
     if (cabecera.casilla && tipo !== 'misterio') {
       morir(`${f}: "casilla" es solo de las cartas de misterio, y esta es "${tipo}".`)
     }
+    if (cabecera.casilla === 'regalo') {
+      if (regalo) morir(`${f}: ya hay otra carta con "casilla: regalo" (${regalo}). Solo puede haber una.`)
+      regalo = id
+    }
+
+    if (cabecera.pinta && !PINTAS.includes(cabecera.pinta)) {
+      morir(`${f}: "pinta" solo puede ser ${PINTAS.join(', ')}. He encontrado: ${cabecera.pinta}`)
+    }
+    if (cabecera.codigo && cabecera.pinta !== 'estafa') {
+      morir(`${f}: "codigo" solo se usa con "pinta: estafa".`)
+    }
 
     const carta = { id, tipo, titulo: cabecera.titulo }
+    if (cabecera.pinta) carta.pinta = cabecera.pinta
+    if (cabecera.codigo) carta.codigo = cabecera.codigo
     if (cabecera.casilla) carta.casilla = cabecera.casilla
     if (cabecera.pista) carta.pista = cabecera.pista
     if (cabecera.escritaEl) carta.escritaEl = cabecera.escritaEl

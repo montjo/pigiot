@@ -1674,6 +1674,17 @@ ul.diario {
 .rueda__hueco--negro { fill: #16161e; }
 .rueda__hueco--verde { fill: #1f7a5c; }
 
+/* La del regalo se ve distinta desde el primer día: dentro hay algo de verdad. */
+.rueda__hueco--regalo {
+  fill: var(--oro);
+  stroke: #fff7e8;
+  stroke-width: 1.2;
+}
+
+.rueda__n--regalo {
+  font-size: 17px;
+}
+
 /* Ya salió: se apaga la casilla y se le tacha el número. No vuelve a tocar. */
 .rueda__hueco.es-usada {
   opacity: 0.22;
@@ -1747,6 +1758,10 @@ ul.diario {
 .premio--rojo { background: linear-gradient(160deg, #9d3832, #5e211c); }
 .premio--negro { background: linear-gradient(160deg, #24242e, #101016); }
 .premio--verde { background: linear-gradient(160deg, #1f7a5c, #10402f); }
+.premio--regalo {
+  background: linear-gradient(160deg, #c9994f, #8a6320);
+  border-color: rgba(255, 247, 232, 0.6);
+}
 
 .premio__eti {
   margin: 0;
@@ -1991,6 +2006,350 @@ ul.diario {
   margin: 0 0 1rem;
   font-size: 1.02rem;
   line-height: 1.5;
+}
+
+/* --- El falso «¡has ganado un iPhone!» ------------------------------------- */
+/* A propósito feo y fuera de sitio: toda la gracia está en que no pega nada
+   con el resto de la web. Arial y colores de banner de 2009. */
+
+.estafa {
+  overflow: hidden;
+  max-width: 30rem;
+  margin: 0 auto;
+  border: 3px solid #0b3f8f;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 26px 60px rgba(0, 0, 0, 0.5);
+  font-family: Arial, Helvetica, sans-serif;
+  text-align: center;
+  animation: aparecer 0.28s ease both;
+}
+
+.es-temblor {
+  animation: temblor-estafa 0.4s ease;
+}
+
+@keyframes temblor-estafa {
+  10%, 50%, 90% { transform: translateX(-7px); }
+  30%, 70% { transform: translateX(7px); }
+}
+
+.estafa__barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.35rem 0.35rem 0.35rem 0.7rem;
+  background: linear-gradient(#4a4a55, #2c2c34);
+}
+
+.estafa__url {
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.74rem;
+  letter-spacing: 0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.estafa__cerrar {
+  flex: none;
+  min-height: 26px;
+  padding: 0 0.5rem;
+  border: 0;
+  border-radius: 4px;
+  background: #d0342c;
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: none;
+}
+
+.estafa__cuerpo {
+  padding: 1.4rem 1.1rem 1.2rem;
+  background: linear-gradient(180deg, #1e6bd6, #0b3f8f);
+  color: #fff;
+}
+
+.estafa__grito {
+  margin: 0 0 0.3rem;
+  color: #ffe14d;
+  font-size: clamp(1.9rem, 1.2rem + 4vw, 2.6rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  text-shadow: 2px 2px 0 #b02a20;
+}
+
+.estafa__sub {
+  margin: 0 0 1rem;
+  font-size: 0.94rem;
+  font-weight: 700;
+}
+
+.estafa__premio {
+  margin: 0 0 0.9rem;
+  padding: 0.5rem 0.6rem;
+  border: 2px dashed #ffe14d;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 1.14rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.estafa__imagen {
+  display: block;
+  width: 100%;
+  margin: 0 0 0.9rem;
+  border: 3px solid #fff;
+  border-radius: 6px;
+}
+
+.estafa__reloj {
+  margin: 0 0 1rem;
+  font-size: 0.94rem;
+}
+
+.estafa__reloj strong {
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  background: #d0342c;
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
+}
+
+.estafa__boton {
+  width: 100%;
+  min-height: 56px;
+  border: 0;
+  border-bottom: 4px solid #1f8a2c;
+  border-radius: 8px;
+  background: linear-gradient(#4cd964, #2ecc40);
+  color: #08320f;
+  font-family: inherit;
+  font-size: 1.16rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  box-shadow: 0 0 0 rgba(76, 217, 100, 0.7);
+  animation: latido-estafa 1.5s ease-in-out infinite;
+}
+
+@keyframes latido-estafa {
+  50% {
+    box-shadow: 0 0 0 12px rgba(76, 217, 100, 0);
+    transform: scale(1.015);
+  }
+}
+
+.estafa__legal {
+  margin: 0.8rem 0 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+@media (hover: hover) {
+  .estafa__boton:hover:not(:disabled) {
+    background: linear-gradient(#5ce674, #35d948);
+    transform: none;
+  }
+
+  .estafa__cerrar:hover:not(:disabled) {
+    background: #e8453c;
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+/* La pantalla del virus: a pantalla completa y sin escapatoria salvo la X. */
+.pantalla--premio {
+  min-height: 60dvh;
+  display: grid;
+  place-items: center;
+}
+
+.virus {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  overflow: auto;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem 1.1rem;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(190, 20, 20, 0.55), transparent 62%),
+    #08080a;
+  color: #ff4d4d;
+  font-family: 'SF Mono', ui-monospace, 'Menlo', 'Consolas', monospace;
+  text-align: center;
+  animation: virus-entra 0.18s steps(2) both;
+}
+
+@keyframes virus-entra {
+  from { opacity: 0; }
+}
+
+.virus--curado {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(20, 170, 90, 0.5), transparent 62%),
+    #08080a;
+  color: #4cd964;
+}
+
+.virus__cura {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1.6rem 0 0;
+  text-align: left;
+}
+
+.virus__cura label {
+  color: rgba(255, 200, 200, 0.9);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.virus__cura input {
+  width: 100%;
+  min-height: 52px;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid rgba(255, 90, 90, 0.6);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font-family: inherit;
+  font-size: 1.5rem;
+  letter-spacing: 0.35em;
+  text-align: center;
+  box-shadow: none;
+}
+
+.virus__cura input::placeholder {
+  color: rgba(255, 255, 255, 0.28);
+  letter-spacing: 0.35em;
+}
+
+.virus__cura input:focus {
+  border-color: #ff4d4d;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 0 4px rgba(255, 77, 77, 0.18);
+}
+
+.virus__cura button {
+  min-height: 52px;
+  border: 0;
+  border-radius: 4px;
+  background: #ff4d4d;
+  color: #1a0505;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  box-shadow: none;
+}
+
+.virus__fallo {
+  margin: 0;
+  color: #ffb3b3;
+  font-size: 0.82rem;
+}
+
+/* Salida discreta y abajo: no se pulsa del susto, pero está si hace falta. */
+.virus__huir {
+  min-height: 38px;
+  margin: 1.6rem auto 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: rgba(255, 140, 140, 0.45);
+  font-family: inherit;
+  font-size: 0.74rem;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  box-shadow: none;
+}
+
+.virus__cuerpo {
+  max-width: 26rem;
+}
+
+.virus__icono {
+  margin: 0;
+  font-size: 3.4rem;
+  line-height: 1;
+  animation: virus-late 1s steps(2) infinite;
+}
+
+@keyframes virus-late {
+  50% { opacity: 0.25; }
+}
+
+.virus__titulo {
+  margin: 0.4rem 0 1rem;
+  font-size: clamp(3rem, 2rem + 8vw, 5rem);
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: 0.06em;
+  text-shadow: 0 0 26px rgba(255, 40, 40, 0.75);
+}
+
+.virus__medidor {
+  overflow: hidden;
+  height: 14px;
+  margin: 0 auto 0.5rem;
+  border: 1px solid rgba(255, 90, 90, 0.55);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.virus__medidor > span {
+  display: block;
+  height: 100%;
+  background: repeating-linear-gradient(
+    90deg,
+    #ff4d4d 0 10px,
+    #8d1414 10px 14px
+  );
+  transition: width 0.42s linear;
+}
+
+.virus__porcentaje {
+  margin: 0 0 1.2rem;
+  color: rgba(255, 140, 140, 0.85);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+.virus__linea {
+  margin: 0 0 0.7rem;
+  color: #ffdede;
+  font-size: 1.02rem;
+  line-height: 1.5;
+}
+
+.virus__consola {
+  margin: 1.6rem 0 0;
+  color: rgba(255, 120, 120, 0.62);
+  font-size: 0.78rem;
+  line-height: 1.9;
+  text-align: left;
+}
+
+@media (hover: hover) {
+  .virus__cura button:hover:not(:disabled) {
+    background: #ff6b6b;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .virus__huir:hover:not(:disabled) {
+    color: rgba(255, 180, 180, 0.8);
+    transform: none;
+  }
 }
 
 /* El QUEST al final de una carta ya leída. */

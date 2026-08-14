@@ -26,12 +26,12 @@ dist-ssr
 # --- Este proyecto ---
 # El contenido EN CLARO nunca se sube: el repo es público y solo debe viajar
 # public/letters.enc.json, que va cifrado.
-content/letters.json
-content/cartas/
-content/voces/
-content/fotos/
-content/bombo/
-content/.ids-anteriores.json
+#
+# Se ignora TODO lo que hay dentro de content/ y se deja pasar solo lo que puede
+# ser público. Antes se listaba carpeta por carpeta y una carpeta nueva se
+# colaba en el repo sin que nadie se diera cuenta.
+content/*
+!content/pista.txt
 # Config de Firebase y contraseñas locales
 .env
 .env.local

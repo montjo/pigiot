@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useSession } from '../lib/session-context'
 import { cargarMiniatura, subirFoto } from '../lib/fotos'
 import {
@@ -9,7 +9,13 @@ import {
   planPendiente,
   planesDisponibles,
 } from '../lib/estado'
-import { NOMBRE_TIPO, pruebaVaDespues, type Carta, type Plan, type PruebaAportada } from '../lib/tipos'
+import {
+  NOMBRE_TIPO,
+  pruebaVaDespues,
+  type Carta,
+  type Plan,
+  type PruebaAportada,
+} from '../lib/tipos'
 
 const ARMADO_MS = 700
 
@@ -233,6 +239,175 @@ function PanelPrueba({
   )
 }
 
+/**
+ * El señuelo del premio: uno de esos «¡HAS GANADO UN IPHONE!» que todo el mundo
+ * sabe que son mentira. Al reclamar sale un virus de pantalla completa que le
+ * manda a hablar con nosotros, y al cerrarlo la carta y su casilla desaparecen
+ * como si no hubieran existido. El regalo de verdad se da en mano.
+ */
+function Estafa({
+  carta,
+  alCurar,
+  alSalir,
+}: {
+  carta: Carta
+  /** Ha metido el código: el virus se va y la carta deja de existir. */
+  alCurar: () => void
+  /** Se va sin desinfectar: el premio sigue pendiente y puede volver. */
+  alSalir: () => void
+}) {
+  const [fase, setFase] = useState<'premio' | 'virus' | 'curado'>('premio')
+  const [temblor, setTemblor] = useState(false)
+  const [quedan, setQuedan] = useState(297)
+  /** La infección sube deprisa al principio y se atasca cerca del final. */
+  const [infeccion, setInfeccion] = useState(61)
+  const [codigo, setCodigo] = useState('')
+  const [fallo, setFallo] = useState(false)
+
+  useEffect(() => {
+    if (fase !== 'premio') return
+    const t = window.setInterval(() => setQuedan((s) => (s > 0 ? s - 1 : 0)), 1000)
+    return () => window.clearInterval(t)
+  }, [fase])
+
+  useEffect(() => {
+    if (fase !== 'virus') return
+    const t = window.setInterval(
+      () => setInfeccion((v) => Math.min(93, v + Math.max(0.15, (94 - v) * 0.05))),
+      420,
+    )
+    return () => window.clearInterval(t)
+  }, [fase])
+
+  /** La X del popup no cierra nada, como en las de verdad: solo hace temblar. */
+  function noSeCierra() {
+    setTemblor(true)
+    window.setTimeout(() => setTemblor(false), 420)
+  }
+
+  const esperado = (carta.codigo ?? '').trim().toLowerCase()
+
+  function desinfectar(e: React.FormEvent) {
+    e.preventDefault()
+    if (esperado && codigo.trim().toLowerCase() !== esperado) {
+      setFallo(true)
+      setTemblor(true)
+      window.setTimeout(() => setTemblor(false), 420)
+      // Fallar acelera la infección, para que no se ponga a probar números.
+      setInfeccion((v) => Math.min(97, v + 2))
+      setCodigo('')
+      return
+    }
+    setFase('curado')
+    window.setTimeout(alCurar, 1600)
+  }
+
+  const portada = carta.fotos?.[0]
+  const reloj = `${String(Math.floor(quedan / 60)).padStart(2, '0')}:${String(quedan % 60).padStart(2, '0')}`
+
+  if (fase === 'curado') {
+    return (
+      <div className="virus virus--curado" role="status">
+        <div className="virus__cuerpo">
+          <p className="virus__icono" aria-hidden="true">
+            ✓
+          </p>
+          <p className="virus__titulo">LIMPIO</p>
+          <p className="virus__linea">Sistema desinfectado. Y tu infarto también.</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (fase === 'virus') {
+    return (
+      <div className={`virus${temblor ? ' es-temblor' : ''}`} role="alertdialog" aria-label="Aviso de virus">
+        <div className="virus__cuerpo">
+          <p className="virus__icono" aria-hidden="true">
+            ☣
+          </p>
+          <p className="virus__titulo">VIRUS</p>
+          <div className="virus__medidor">
+            <span style={{ width: `${infeccion}%` }} />
+          </div>
+          <p className="virus__porcentaje">
+            Infección al {Math.floor(infeccion)} %
+          </p>
+          {carta.cuerpo?.map((p, n) => (
+            <p className="virus__linea" key={n}>
+              {p}
+            </p>
+          ))}
+          <form className="virus__cura" onSubmit={desinfectar}>
+            <label htmlFor="codigo-virus">Código de desinfección</label>
+            <input
+              id="codigo-virus"
+              type="text"
+              inputMode="numeric"
+              autoComplete="off"
+              value={codigo}
+              onChange={(e) => {
+                setCodigo(e.target.value)
+                setFallo(false)
+              }}
+              placeholder="· ·"
+            />
+            <button type="submit">DESINFECTAR</button>
+            {fallo && <p className="virus__fallo">Código incorrecto. La infección se acelera.</p>}
+          </form>
+
+          <p className="virus__consola">
+            {'> '}
+            infectando galería… ok
+            <br />
+            {'> '}
+            leyendo contactos… ok
+            <br />
+            {'> '}
+            cifrando táperes… ok
+          </p>
+
+          <button type="button" className="virus__huir" onClick={alSalir}>
+            salir sin desinfectar
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <section className={`estafa${temblor ? ' es-temblor' : ''}`}>
+      <div className="estafa__barra">
+        <span className="estafa__url">premios-oficiales-2026.net</span>
+        <button type="button" className="estafa__cerrar" onClick={noSeCierra} aria-label="Cerrar">
+          ✕
+        </button>
+      </div>
+      <div className="estafa__cuerpo">
+        <p className="estafa__grito">¡¡FELICIDADES!!</p>
+        <p className="estafa__sub">Has sido seleccionado como GANADOR del sorteo de hoy</p>
+        <p className="estafa__premio">{carta.titulo}</p>
+        {portada && <img className="estafa__imagen" src={portada.src} alt={portada.pie ?? ''} />}
+        <p className="estafa__reloj">
+          {quedan > 0 ? (
+            <>
+              Tu premio caduca en <strong>{reloj}</strong>
+            </>
+          ) : (
+            <>Tu premio ha caducado. Mentira: sigue ahí.</>
+          )}
+        </p>
+        <button type="button" className="estafa__boton" onClick={() => setFase('virus')}>
+          RECLAMAR AHORA
+        </button>
+        <p className="estafa__legal">
+          Sin tarjeta, sin registro y sin letra pequeña. Pulsa y reclama tu premio.
+        </p>
+      </div>
+    </section>
+  )
+}
+
 /** La foto que subió, descifrada otra vez para que pueda volver a verla. */
 function FotoGuardada({ id }: { id: string }) {
   const { clave } = useSession()
@@ -381,6 +556,7 @@ function Voces({ carta }: { carta: Carta }) {
 
 export default function LetterPage() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const { status, cartas, progreso, abrir, aportarPrueba, modoRevision } = useSession()
   const [armada, setArmada] = useState(false)
   const [abriendo, setAbriendo] = useState(false)
@@ -411,6 +587,24 @@ export default function LetterPage() {
       ← Todas las cartas
     </Link>
   )
+
+  // El señuelo del premio no pasa por el sobre: se abre de golpe. Y cuando lo
+  // cierra queda «abierto», que es la marca de que ya no existe para nadie.
+  if (carta.pinta === 'estafa') {
+    if (progreso.opened[carta.id] && !modoRevision) return <Navigate to="/ruleta" replace />
+    return (
+      <main className="pantalla pantalla--premio" data-tipo={carta.tipo}>
+        <Estafa
+          carta={carta}
+          alCurar={() => {
+            abrir(carta.id)
+            navigate('/ruleta', { replace: true })
+          }}
+          alSalir={() => navigate('/ruleta', { replace: true })}
+        />
+      </main>
+    )
+  }
 
   if (estado === 'pide-prueba') {
     return (

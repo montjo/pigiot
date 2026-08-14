@@ -61,13 +61,29 @@ export type FotoCarta = {
   pie?: string
 }
 
-/** Color de la casilla que le toca en la ruleta a una carta de misterio. */
-export const COLORES_CASILLA = ['rojo', 'negro', 'verde'] as const
+/**
+ * Color de la casilla que le toca en la ruleta a una carta de misterio. La
+ * `regalo` es única y se ve distinta desde el principio: dentro hay un regalo
+ * de verdad, no una misión.
+ */
+export const COLORES_CASILLA = ['rojo', 'negro', 'verde', 'regalo'] as const
 export type ColorCasilla = (typeof COLORES_CASILLA)[number]
+
+/** Formas de pintar una carta que no son el papel de siempre. */
+export const PINTAS = ['estafa'] as const
+export type Pinta = (typeof PINTAS)[number]
 
 export type Carta = {
   id: string
   tipo: TipoCarta
+  /** Si la carta se pinta de otra manera. `estafa` es el falso «has ganado un…». */
+  pinta?: Pinta
+  /**
+   * Solo con `pinta: estafa`. El código que hay que teclear para quitar el
+   * virus. Se lo decimos nosotros en voz alta: así no puede cerrarlo del susto
+   * y tiene que hablar con alguien. Va cifrado dentro del paquete.
+   */
+  codigo?: string
   /**
    * Solo en las de misterio: en qué color de la ruleta vive. Si no se dice,
    * se reparte sola entre rojas y negras. Las verdes (0 y 00) son las raras.

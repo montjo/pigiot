@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { sha256Hex } from '../lib/crypto'
 import { isFirebaseConfigured } from '../lib/firebase'
-import { verProgreso } from '../lib/progress'
+import { olvidarLocal, verProgreso } from '../lib/progress'
 import { useSession } from '../lib/session-context'
 import { formatearFecha } from '../lib/estado'
 import { contar } from '../lib/economia'
@@ -53,6 +53,46 @@ function Fotos({ clave }: { clave: CryptoKey }) {
           </li>
         ))}
       </ul>
+    </section>
+  )
+}
+
+/**
+ * Deja este aparato como nuevo. Hay que hacerlo ANTES de borrar el documento en
+ * la consola, o al abrir la web se vuelve a subir lo que hubiera aquí guardado.
+ */
+function OlvidarDispositivo({ progressId }: { progressId: string }) {
+  const [seguro, setSeguro] = useState(false)
+
+  return (
+    <section className="diario">
+      <h2>Dejar este aparato como nuevo</h2>
+      <p className="apagado">
+        Borra la copia que hay en <strong>este</strong> navegador: aperturas, pruebas, días,
+        tiradas y la intro. La copia de la nube no se puede borrar desde aquí; eso se hace en la
+        consola de Firebase, y hay que hacerlo <strong>después</strong> de esto, porque si no la
+        web vuelve a subir lo de aquí al abrirse.
+      </p>
+      {seguro ? (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              olvidarLocal(progressId)
+              window.location.reload()
+            }}
+          >
+            Sí, bórralo de este aparato
+          </button>
+          <button type="button" className="enlace" onClick={() => setSeguro(false)}>
+            mejor no
+          </button>
+        </>
+      ) : (
+        <button type="button" className="enlace" onClick={() => setSeguro(true)}>
+          borrar el progreso de este aparato
+        </button>
+      )}
     </section>
   )
 }
@@ -186,6 +226,8 @@ export default function Admin() {
       {abiertas.length === 0 && <p className="apagado">Todavía no ha abierto ninguna.</p>}
 
       {clave && <Fotos clave={clave} />}
+
+      <OlvidarDispositivo progressId={progressId} />
 
       {pendientes.length > 0 && (
         <section className="diario">

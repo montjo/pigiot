@@ -15,7 +15,7 @@ import {
   modoEfimero,
 } from './progress'
 import { planesDisponibles } from './estado'
-import { ECONOMIA, casillas, casillasVivas, contar, elegirCasilla } from './economia'
+import { ECONOMIA, casillaDeSalida, casillas, casillasVivas, contar, elegirCasilla } from './economia'
 import { SessionContext, type SessionState } from './session-context'
 import { PROGRESO_VACIO, type Bundle, type Carta, type Plan, type Progreso, type Tirada } from './tipos'
 
@@ -181,7 +181,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const girarRuleta = useCallback((): Tirada | null => {
     // En revisión se puede girar sin pagar: es para ver cómo queda, y no se apunta.
     if (!modoRevision && contar(ref.current, cartas).saldo < ECONOMIA.tirada) return null
-    const elegida = elegirCasilla(casillasVivas(casillas(cartas, ref.current)))
+    const lista = casillas(cartas, ref.current)
+    const elegida =
+      casillaDeSalida(lista, ref.current) ?? elegirCasilla(casillasVivas(lista))
     if (!elegida) return null
     const tirada: Tirada = {
       at: new Date().toISOString(),
