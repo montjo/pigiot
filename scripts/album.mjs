@@ -81,6 +81,34 @@ async function crear(cfg, coleccion, campos, id) {
   return doc.name.split('/').pop()
 }
 
+/**
+ * Los ids que hay de verdad en el álbum. Sirve para que el registro de subidas
+ * no mienta: si una foto se borra desde la consola de Firebase, aquí se nota y
+ * se vuelve a subir en la siguiente pasada.
+ *
+ * La máscara es importante: sin ella, listar la colección bajaría todas las
+ * miniaturas cifradas, y eso son megas de tráfico para no mirarlas.
+ */
+async function idsEnAlbum(cfg) {
+  const ids = new Set()
+  let pagina
+  do {
+    const url = new URL(
+      `https://firestore.googleapis.com/v1/projects/${cfg.projectId}/databases/(default)/documents/photos`,
+    )
+    url.searchParams.set('key', cfg.apiKey)
+    url.searchParams.set('pageSize', '300')
+    url.searchParams.set('mask.fieldPaths', 'at')
+    if (pagina) url.searchParams.set('pageToken', pagina)
+    const res = await fetch(url)
+    if (!res.ok) throw new Error(`Firestore ha dicho ${res.status} al listar el álbum`)
+    const datos = await res.json()
+    for (const doc of datos.documents ?? []) ids.add(doc.name.split('/').pop())
+    pagina = datos.nextPageToken
+  } while (pagina)
+  return ids
+}
+
 // --- Cifrado ----------------------------------------------------------------
 // Mismo formato exacto que src/lib/crypto.ts, o el navegador no lo sabría leer.
 
@@ -282,6 +310,26 @@ try {
   subidas = JSON.parse(await readFile(LIBRO, 'utf8'))
 } catch {
   // Primera vez.
+}
+
+// El álbum manda sobre el registro: lo que ya no está en Firebase se vuelve a
+// subir, aunque aquí figure como subido. Si no se puede preguntar, el registro
+// se deja tal cual: mejor no subir dos veces que subir por duplicado.
+if (Object.keys(subidas).length) {
+  try {
+    const vivas = await idsEnAlbum(cfg)
+    const perdidas = Object.entries(subidas).filter(([, id]) => !vivas.has(id))
+    for (const [marca] of perdidas) delete subidas[marca]
+    if (perdidas.length) {
+      await writeFile(LIBRO, JSON.stringify(subidas, null, 2), 'utf8')
+      console.log(
+        `\n  ${perdidas.length} ${perdidas.length === 1 ? 'foto ya no está' : 'fotos ya no están'} en Firebase` +
+          ' (¿borradas desde la consola?). Se vuelven a subir.',
+      )
+    }
+  } catch (error) {
+    aviso(`no he podido comprobar qué hay ya en el álbum: ${error.message}`)
+  }
 }
 
 const pies = await leerPies(carpeta)
